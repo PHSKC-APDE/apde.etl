@@ -1,9 +1,9 @@
 Package: apde.etl
 Title: APDE Tools for ETL (Extract, Transform, & Load) Procesess
-Version: 0.0.1
+Version: 1.00
 Authors@R: 
     person("Danny", "Colombara", , "dcolombara@kingcounty.gov", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
+Description: Provides tools for ETL and informatics processes.
 License: Apache License (>= 2)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
