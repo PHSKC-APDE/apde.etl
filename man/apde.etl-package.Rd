@@ -6,7 +6,7 @@
 \alias{apde.etl-package}
 \title{apde.etl: APDE Tools for ETL (Extract, Transform, & Load) Procesess}
 \description{
-What the package does (one paragraph).
+Provides tools for ETL and informatics processes.
 }
 \author{
 \strong{Maintainer}: Danny Colombara \email{dcolombara@kingcounty.gov}
