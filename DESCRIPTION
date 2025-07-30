@@ -33,4 +33,5 @@ Imports:
 Suggests: 
     devtools,
     mockery,
+    quarto,
     testthat
