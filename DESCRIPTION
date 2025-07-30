@@ -1,0 +1,36 @@
+Package: apde.etl
+Title: APDE Tools for ETL (Extract, Transform, & Load) Procesess
+Version: 0.0.1
+Authors@R: 
+    person("Danny", "Colombara", , "dcolombara@kingcounty.gov", role = c("aut", "cre"))
+Description: What the package does (one paragraph).
+License: Apache License (>= 2)
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Imports: 
+    blastula, 
+    configr,
+    data.table,
+    DBI,
+    dplyr,
+    ggplot2,
+    glue,
+    httr,
+    keyring, 
+    knitr, 
+    odbc,
+    openxlsx, 
+    rads, 
+    rads.data,
+    RODBC,
+    scales, 
+    shiny, 
+    shinyWidgets,
+    svDialogs,
+    sys,
+    yaml
+Suggests: 
+    devtools,
+    mockery,
+    testthat
