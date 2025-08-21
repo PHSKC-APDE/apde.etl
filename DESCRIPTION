@@ -30,6 +30,8 @@ Imports:
     svDialogs,
     sys,
     yaml
+Remotes:
+    github::PHSKC-APDE/rads.data, github::PHSKC-APDE/rads
 Suggests: 
     devtools,
     mockery,
