@@ -61,7 +61,7 @@ create_db_connection <- function(server = c("phextractstore", "hhsaw", "inthealt
   }
 
   if (prod == T & server %in% c("hhsaw", "inthealth")) {
-    server_name <- "tcp:kcitazrhpasqlprp16.azds.kingcounty.gov,1433"
+    server_name <- "tcp:kcitazrhpasqlprp16.database.windows.net,1433"
   } else {
     server_name <- "tcp:kcitazrhpasqldev20.database.windows.net,1433"
   }
@@ -70,33 +70,30 @@ create_db_connection <- function(server = c("phextractstore", "hhsaw", "inthealt
   if (server == "phextractstore") {
     if (prod == T) {
       conn <- DBI::dbConnect(odbc::odbc(),
-                              Driver = "SQL Server",
+                              Driver = getOption('apde.etl.odbc_version'),
                               Server = "KCITSQLPRPHIP40",
                               Database = "PHExtractStore")
     } else {
       conn <- DBI::dbConnect(odbc::odbc(),
-                              Driver = "SQL Server",
+                              Driver = getOption('apde.etl.odbc_version'),
                               Server = "KCITSQLUATHIP40",
                               Database = "PHExtractStore")
     }
   } else if (interactive == F) {
     conn <- DBI::dbConnect(odbc::odbc(),
-                           driver = "ODBC Driver 17 for SQL Server",
+                           driver = getOption('apde.etl.odbc_version'),
                            server = server_name,
                            database = db_name,
-                           uid = keyring::key_list("hhsaw")[["username"]],
-                           pwd = keyring::key_get("hhsaw", keyring::key_list("hhsaw")[["username"]]),
                            Encrypt = "yes",
-                           TrustServerCertificate = "yes",
-                           Authentication = "ActiveDirectoryPassword")
+                           Authentication = "ActiveDirectoryIntegrated")
   } else if (interactive == T) {
     conn <- DBI::dbConnect(odbc::odbc(),
-                           driver = "ODBC Driver 17 for SQL Server",
+                           driver = getOption('apde.etl.odbc_version'),
                            server = server_name,
                            database = db_name,
                            uid = keyring::key_list("hhsaw")[["username"]],
                            Encrypt = "yes",
-                           TrustServerCertificate = "yes",
+
                            Authentication = "ActiveDirectoryInteractive")
   }
 

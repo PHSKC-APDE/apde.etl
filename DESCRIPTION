@@ -1,13 +1,13 @@
 Package: apde.etl
 Title: APDE Tools for ETL (Extract, Transform, & Load) Procesess
-Version: 1.00
+Version: 1.01
 Authors@R: 
     person("Danny", "Colombara", , "dcolombara@kingcounty.gov", role = c("aut", "cre"))
 Description: Provides tools for ETL and informatics processes.
 License: Apache License (>= 2)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 Imports: 
     blastula, 
     configr,
@@ -30,6 +30,8 @@ Imports:
     svDialogs,
     sys,
     yaml
+Remotes:
+    github::PHSKC-APDE/rads.data, github::PHSKC-APDE/rads
 Suggests: 
     devtools,
     mockery,
