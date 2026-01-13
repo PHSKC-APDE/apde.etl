@@ -70,7 +70,7 @@ create_db_connection <- function(server = c("phextractstore", "hhsaw", "inthealt
   if (server == "phextractstore") {
     if (prod == T) {
       conn <- DBI::dbConnect(odbc::odbc(),
-                             Driver = "SQL Server",
+                             Driver = getOption('apde.etl.odbc_version'),
                              Server = "KCITSQLPRPHIP40",
                              Database = "PHExtractStore",
                              Trusted_Connection = "yes",
@@ -78,7 +78,7 @@ create_db_connection <- function(server = c("phextractstore", "hhsaw", "inthealt
                              Encrypt = "no")
     } else {
       conn <- DBI::dbConnect(odbc::odbc(),
-                             Driver = "SQL Server",
+                             Driver = getOption('apde.etl.odbc_version'),
                              Server = "KCITSQLUATHIP40",
                              Database = "PHExtractStore",
                              Trusted_Connection = "yes",
