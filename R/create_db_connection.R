@@ -70,20 +70,22 @@ create_db_connection <- function(server = c("phextractstore", "hhsaw", "inthealt
   if (server == "phextractstore") {
     if (prod == T) {
       conn <- DBI::dbConnect(odbc::odbc(),
-                             Driver = getOption('apde.etl.odbc_version'),
-                             Server = "KCITSQLPRPHIP40",
-                             Database = "PHExtractStore",
-                             Trusted_Connection = "yes",
-                             TrustServerCertificate = "yes",
-                             Encrypt = "no")
+                              Driver = getOption('apde.etl.odbc_version'),
+                              Server = "KCITSQLPRPHIP40",
+                              Database = "PHExtractStore",
+                              Encrypt = "yes",
+                              Authentication = "ActiveDirectoryIntegrated",
+                              TrustServerCertificate = 'yes' #Not ideal, but probably fine since its on prem
+                             )
     } else {
       conn <- DBI::dbConnect(odbc::odbc(),
-                             Driver = getOption('apde.etl.odbc_version'),
-                             Server = "KCITSQLUATHIP40",
-                             Database = "PHExtractStore",
-                             Trusted_Connection = "yes",
-                             TrustServerCertificate = "yes",
-                             Encrypt = "no")
+                              Driver = getOption('apde.etl.odbc_version'),
+                              Server = "KCITSQLUATHIP40",
+                              Database = "PHExtractStore",
+                              Encrypt = "yes",
+                              Authentication = "ActiveDirectoryIntegrated",
+                              TrustServerCertificate = 'yes' #Not ideal, but probably fine since its on prem
+                             )
     }
   } else if (interactive == F) {
     conn <- DBI::dbConnect(odbc::odbc(),
