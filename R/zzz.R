@@ -1,6 +1,6 @@
 .onAttach <- function(libname, pkgname) {
   if (interactive()) {
-    check_version()
+    getNamespace("apde.etl")$check_version()
   }
 }
 
