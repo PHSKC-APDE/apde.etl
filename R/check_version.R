@@ -25,7 +25,8 @@
 #' apde.etl::check_version()
 #' }
 #'
-#' @export
+#' @keywords internal
+#' @noRd
 check_version <- function(print_message = TRUE) {
 
   # Initialize return values
