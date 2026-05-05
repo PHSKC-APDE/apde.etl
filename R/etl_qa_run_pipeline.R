@@ -1860,10 +1860,10 @@ plotCONTINUOUS <- function(var_data, time_var, mytitle) {
 
   plot <- plot +
     ggplot2::scale_color_manual(name = "Stats",
-                       values = c("Minimum" = "#2C7BB6",
-                                  "Mean" = "#D7191C",
-                                  "Median" = "#ABDDA4",
-                                  "Maximum" = "#FDAE61")) +
+                       values = c("Minimum" = "#a6cee3",
+                                  "Mean" = "#1f78b4",
+                                  "Median" = "#b2df8a",
+                                  "Maximum" = "#33a02c")) +
 
     ggplot2::scale_x_continuous(name = time_var,
                                 breaks = scales::breaks_pretty(n = 10),
@@ -1912,9 +1912,9 @@ plotDATE <- function(var_data, time_var, mytitle) {
 
   plot <- plot +
     ggplot2::scale_color_manual(name = "Stats",
-                       values = c("Minimum" = "#2C7BB6",
-                                  "Median" = "#ABDDA4",
-                                  "Maximum" = "#FDAE61")) +
+                       values = c("Minimum" = "#a6cee3",
+                                  "Median" = "#b2df8a",
+                                  "Maximum" = "#33a02c")) +
     ggplot2::scale_x_continuous(name = time_var,
                                 breaks = scales::breaks_pretty(n = 10),
                                 labels = scales::label_number(accuracy = 1, big.mark = '')) +
