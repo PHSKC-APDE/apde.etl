@@ -1879,15 +1879,21 @@ plotCONTINUOUS <- function(var_data, time_var, mytitle) {
 #'
 #'
 plotDATE <- function(var_data, time_var, mytitle) {
+  # Drop rows for years without data because some questions asked alternating years
+  var_data <- var_data[!is.na(median_date)]
+
   # Typical case where there is more than 1 row of data
   if (nrow(var_data[!is.na(median_date)]) > 1){
     plot <-   ggplot2::ggplot(var_data[!is.na(median_date)]) +
       ggplot2::geom_line(ggplot2::aes(x = time_period, y = min_date, color = "Minimum", linetype = "Minimum"), linewidth = 2) +
       ggplot2::geom_line(ggplot2::aes(x = time_period, y = median_date, color = "Median", linetype = "Median"), linewidth = 1.5) +
       ggplot2::geom_line(ggplot2::aes(x = time_period, y = max_date, color = "Maximum", linetype = "Maximum"), linewidth = 2) +
+      ggplot2::geom_point(ggplot2::aes(x = time_period, y = min_date, color = "Minimum"), size = 2.5, show.legend = FALSE) +
+      ggplot2::geom_point(ggplot2::aes(x = time_period, y = median_date, color = "Median"), size = 2.5, show.legend = FALSE) +
+      ggplot2::geom_point(ggplot2::aes(x = time_period, y = max_date, color = "Maximum"), size = 2.5, show.legend = FALSE) +
       ggplot2::scale_linetype_manual(name = "Stats",
                             values = c("Minimum" = "solid",
-                                       "Median" = "1212",
+                                       "Median" = "solid",
                                        "Maximum" = "solid"))
   } else if (nrow(var_data[!is.na(median_date)]) == 1){
     plot <-   ggplot2::ggplot(var_data[!is.na(median_date)]) +
@@ -1910,7 +1916,7 @@ plotDATE <- function(var_data, time_var, mytitle) {
     ggplot2::theme_bw() +
     ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5),
           plot.subtitle = ggplot2::element_text(hjust = 0.5, face = 'bold', size = 16)) +
-    ggplot2::guides(color = ggplot2::guide_legend(override.aes = list(linetype = c("solid", "1212", "solid"))))
+    ggplot2::guides(color = ggplot2::guide_legend(override.aes = list(linetype = c("solid", "solid", "solid"))))
 
   return(plot)
 }
