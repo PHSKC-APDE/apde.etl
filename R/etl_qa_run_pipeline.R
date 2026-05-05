@@ -1789,6 +1789,9 @@ etl_qa_export_results <- function(qa_results, config) {
 #'
 #'
 plotCATEGORICAL <- function(var_data, time_var, mytitle) {
+  # Drop rows for years without data because some questions asked alternating years
+  var_data <- var_data[, if(any(proportion != 0)) .SD, by = time_period]
+
   value_levels <- levels(factor(var_data$value, exclude = NULL))
   linetypes <- rep("solid", length(value_levels))
   names(linetypes) <- value_levels
@@ -1796,6 +1799,7 @@ plotCATEGORICAL <- function(var_data, time_var, mytitle) {
 
   ggplot2::ggplot(var_data, ggplot2::aes(x = time_period, y = proportion, color = value, linetype = value)) +
     ggplot2::geom_line(ggplot2::aes(linewidth = ifelse(is.na(value), 1.5, 2))) +
+    ggplot2::geom_point(size = 2.5, show.legend = FALSE) +
     ggplot2::scale_x_continuous(name = time_var, breaks = seq(min(var_data[['time_period']]), max(var_data[['time_period']]), length.out = 5)) +
     ggplot2::scale_y_continuous(limits = c(0, 1)) +
     ggplot2::scale_color_manual(values = c(scales::hue_pal()(length(unique(stats::na.omit(var_data$value)))), "black"),
