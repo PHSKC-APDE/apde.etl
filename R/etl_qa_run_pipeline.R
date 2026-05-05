@@ -1800,7 +1800,9 @@ plotCATEGORICAL <- function(var_data, time_var, mytitle) {
   ggplot2::ggplot(var_data, ggplot2::aes(x = time_period, y = proportion, color = value, linetype = value)) +
     ggplot2::geom_line(ggplot2::aes(linewidth = ifelse(is.na(value), 1.5, 2))) +
     ggplot2::geom_point(size = 2.5, show.legend = FALSE) +
-    ggplot2::scale_x_continuous(name = time_var, breaks = seq(min(var_data[['time_period']]), max(var_data[['time_period']]), length.out = 5)) +
+    ggplot2::scale_x_continuous(name = time_var,
+                                breaks = scales::breaks_pretty(n = 10),
+                                labels = scales::label_number(accuracy = 1, big.mark = '')) +
     ggplot2::scale_y_continuous(limits = c(0, 1)) +
     ggplot2::scale_color_manual(values = c(scales::hue_pal()(length(unique(stats::na.omit(var_data$value)))), "black"),
                        na.value = "black") +
@@ -1863,7 +1865,9 @@ plotCONTINUOUS <- function(var_data, time_var, mytitle) {
                                   "Median" = "#ABDDA4",
                                   "Maximum" = "#FDAE61")) +
 
-    ggplot2::scale_x_continuous(name = time_var, breaks = seq(min(var_data[['time_period']]), max(var_data[['time_period']]), length.out = 5)) +
+    ggplot2::scale_x_continuous(name = time_var,
+                                breaks = scales::breaks_pretty(n = 10),
+                                labels = scales::label_number(accuracy = 1, big.mark = '')) +
     ggplot2::labs(title = mytitle, subtitle = paste0('', var_data$varname[1]), x = time_var, y = var_data$varname[1]) +
     ggplot2::theme_bw() +
     ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5),
@@ -1911,7 +1915,9 @@ plotDATE <- function(var_data, time_var, mytitle) {
                        values = c("Minimum" = "#2C7BB6",
                                   "Median" = "#ABDDA4",
                                   "Maximum" = "#FDAE61")) +
-    ggplot2::scale_x_continuous(name = time_var, breaks = seq(min(var_data[['time_period']]), max(var_data[['time_period']]), length.out = 5)) +
+    ggplot2::scale_x_continuous(name = time_var,
+                                breaks = scales::breaks_pretty(n = 10),
+                                labels = scales::label_number(accuracy = 1, big.mark = '')) +
     ggplot2::scale_y_date(date_labels = "%Y-%m-%d",
                  limits = c(min(var_data$min_date), max(var_data$max_date)),
                  # date_breaks = "5 year" # commented out because never know the scale of dates being assessed
@@ -1943,7 +1949,9 @@ plotMISSING <- function(plot_data, time_var, mytitle) {
       ggplot2::geom_point(size = 2.5) +
       ggplot2::geom_line(linewidth = 2) +
       ggplot2::facet_wrap('varname', ncol = 4) +
-      ggplot2::scale_x_continuous(name = time_var, breaks = seq(min(plot_data[['time_period']]), max(plot_data[['time_period']]), length.out = 5)) +
+      ggplot2::scale_x_continuous(name = time_var,
+                                  breaks = scales::breaks_pretty(n = 8),
+                                  labels = scales::label_number(accuracy = 1, big.mark = '')) +
       ggplot2::scale_y_continuous(limits = c(0, 1), labels = scales::percent_format(accuracy = 1L)) +
       ggplot2::ylab('Percent missing') +
       ggplot2::ggtitle(mytitle) +
