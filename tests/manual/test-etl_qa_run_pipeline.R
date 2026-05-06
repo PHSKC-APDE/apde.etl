@@ -68,7 +68,7 @@ library(apde.etl)
       data_source_type = 'rads',
       data_params = list(
         function_name = 'get_data_birth',
-        time_var = 'chi_year',
+        time_var = 'date_of_birth_year',
         time_range = c(2021, 2022),
         cols = c('chi_age', 'race4', 'birth_weight_grams', 'birthplace_city',
                  'num_prev_cesarean', 'mother_date_of_birth'),
@@ -84,13 +84,13 @@ library(apde.etl)
                                        kingco = F,
                                        cols = c('chi_age', 'race4', 'birth_weight_grams',
                                                 'birthplace_city', 'num_prev_cesarean',
-                                                'chi_year', 'mother_date_of_birth'),
+                                                'date_of_birth_year', 'mother_date_of_birth'),
     )
     qa.df <- etl_qa_run_pipeline(
       data_source_type = 'r_dataframe',
       data_params = list(
         data = birth_data,
-        time_var = 'chi_year',
+        time_var = 'date_of_birth_year',
         time_range = c(2021, 2022),
         cols = c('chi_age', 'race4', 'birth_weight_grams', 'birthplace_city',
                  'num_prev_cesarean', 'mother_date_of_birth'),
@@ -105,7 +105,7 @@ library(apde.etl)
       connection = myconnection,
       data_params = list(
         schema_table = 'birth.final_analytic',
-        time_var = 'chi_year',
+        time_var = 'date_of_birth_year',
         time_range = c(2021, 2022),
         cols =c('chi_age', 'race4', 'birth_weight_grams', 'birthplace_city',
                 'num_prev_cesarean', 'mother_date_of_birth'),
@@ -120,7 +120,7 @@ library(apde.etl)
       connection = myconnection,
       data_params = list(
         schema_table = 'birth.final_analytic',
-        time_var = 'chi_year',
+        time_var = 'date_of_birth_year',
         time_range = c(2021, 2022),
         cols =c('chi_age', 'race4', 'birth_weight_grams', 'birthplace_city',
                 'num_prev_cesarean', 'mother_date_of_birth'),
