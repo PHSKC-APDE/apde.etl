@@ -953,7 +953,7 @@ process_sql_server <- function(config) {
 
     # Tidy frequency table
     categorical_freq <- categorical_freq[, .SD, .SDcols = c(config$data_params$time_var, 'varname', 'value')]
-    setnames(categorical_freq, 'value', 'group')
+    data.table::setnames(categorical_freq, 'value', 'group')
     categorical_freq[, your_data := 1]
     categorical_freq <- categorical_freq[!is.na(group)]
 
