@@ -18,7 +18,7 @@ A list of raw analytic output. The table structure may differ slightly depending
 \item \code{vals_categorical}: A frequency table of the top 8 most frequent values
 of categorical variable (and numerics or dates with < your specified \code{distinct_threshold} distinct values) PLUS a rows for \code{NA}
 PLUS a row for all 'Other values'
-\item \code{chi_standards}: Comparison of CHI (Community Health Indicator) variables values with those expected based on \code{rads.data::misc_chi_byvars}
+\item \code{chi_standards}: Comparison of CHI (Community Health Indicator) variables values with those expected based on \code{apde.chi.tools::chi_standard_varnames}
 }
 }
 \description{

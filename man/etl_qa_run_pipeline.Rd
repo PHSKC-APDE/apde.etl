@@ -29,7 +29,7 @@ parameters are needed for all data sources. Please review the examples for detai
 \item \code{check_chi}: Logical vector of length 1. When \code{check_chi = TRUE},
 function will add any available CHI related variables to \code{cols} and
 will assess whether their values align with standards in
-\code{rads.data::misc_chi_byvars}. Default is \code{FALSE}
+\code{apde.chi.tools::chi_standard_varnames}. Default is \code{FALSE}
 \item \code{cols}: Character vector specifying the column names to analyze,
 e.g., \code{cols = c('race4', 'birth_weight_grams', 'birthplace_city')}
 \item \code{time_range}: Character vector of length 2 specifying the start
