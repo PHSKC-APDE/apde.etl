@@ -63,11 +63,11 @@ library(apde.etl)
       rel_threshold = 0
     )
 
-  ## Generic run with RADS ----
-    qa.rads <- etl_qa_run_pipeline(
-      data_source_type = 'rads',
+  ## Generic run with apde.data ----
+    qa.apde.data <- etl_qa_run_pipeline(
+      data_source_type = 'apde.data',
       data_params = list(
-        function_name = 'get_data_birth',
+        function_name = 'birth',
         time_var = 'date_of_birth_year',
         time_range = c(2021, 2022),
         cols = c('chi_age', 'race4', 'birth_weight_grams', 'birthplace_city',
@@ -80,7 +80,7 @@ library(apde.etl)
     )
 
   ## Generic run with R dataframe ----
-    birth_data <- rads::get_data_birth(year = c(2021:2022),
+    birth_data <- apde.data::birth(year = c(2021:2022),
                                        kingco = F,
                                        cols = c('chi_age', 'race4', 'birth_weight_grams',
                                                 'birthplace_city', 'num_prev_cesarean',
@@ -131,19 +131,19 @@ library(apde.etl)
 
 # test etl_qa_run_pipeline functionality ----
   test_that("Identical names of objects in the returned result list", {
-    expect_identical(names(qa.rads), names(qa.df))
-    expect_identical(names(qa.rads), names(qa.sql))
+    expect_identical(names(qa.apde.data), names(qa.df))
+    expect_identical(names(qa.apde.data), names(qa.sql))
   })
 
   test_that("Results are identical regardless of method of accessing data", {
-    expect_identical(qa.rads$final, qa.df$final)
-    expect_identical(qa.rads$final, qa.sql$final)
+    expect_identical(qa.apde.data$final, qa.df$final)
+    expect_identical(qa.apde.data$final, qa.sql$final)
   })
 
   test_that("1 Excel file and 2 PDF files were exported", {
-    expect_true(file.exists(qa.rads$exported$pdf_missing))
-    expect_true(file.exists(qa.rads$exported$pdf_values))
-    expect_true(file.exists(qa.rads$exported$excel))
+    expect_true(file.exists(qa.apde.data$exported$pdf_missing))
+    expect_true(file.exists(qa.apde.data$exported$pdf_values))
+    expect_true(file.exists(qa.apde.data$exported$excel))
 
     expect_true(file.exists(qa.df$exported$pdf_missing))
     expect_true(file.exists(qa.df$exported$pdf_values))
@@ -165,9 +165,9 @@ library(apde.etl)
 
   test_that('Ensure `kingco` = TRUE works as expected', {
     KCfalse <- etl_qa_run_pipeline(
-      data_source_type = 'rads',
+      data_source_type = 'apde.data',
       data_params = list(
-        function_name = 'get_data_birth',
+        function_name = 'birth',
         time_var = 'chi_year',
         time_range = c(2021, 2022),
         cols = c('chi_geo_kc'),
@@ -179,9 +179,9 @@ library(apde.etl)
     )
 
     KCtrue <- etl_qa_run_pipeline(
-      data_source_type = 'rads',
+      data_source_type = 'apde.data',
       data_params = list(
-        function_name = 'get_data_birth',
+        function_name = 'birth',
         time_var = 'chi_year',
         time_range = c(2021, 2022),
         cols = c('chi_geo_kc'),
@@ -196,12 +196,12 @@ library(apde.etl)
   })
 
   test_that('Ensure processing a single numeric, or character, or date var at a time does not cause problems', {
-    # test for both rads and SQL, to effectively test all options since rads uses the data.frame/data.table code
+    # test for both apde.data and SQL, to effectively test all options since apde.data uses the data.frame/data.table code
     # character only ----
-    qa.rads.char <- etl_qa_run_pipeline(
-      data_source_type = 'rads',
+    qa.apde.data.char <- etl_qa_run_pipeline(
+      data_source_type = 'apde.data',
       data_params = list(
-        function_name = 'get_data_birth',
+        function_name = 'birth',
         time_var = 'chi_year',
         time_range = c(2021, 2022),
         cols = c('chi_geo_kc'),
@@ -212,8 +212,8 @@ library(apde.etl)
       output_directory = myOutputFolder
     )
 
-    expect_identical(names(qa.rads.char), c('config', 'initial', 'final', 'exported'))
-    expect_equal(nrow(qa.rads.char$final$values), 6) # two rows for chi_geo_KC == 'King County' and two rows where is.na(chi_geo_kc) and empty rows for continous and dates
+    expect_identical(names(qa.apde.data.char), c('config', 'initial', 'final', 'exported'))
+    expect_equal(nrow(qa.apde.data.char$final$values), 6) # two rows for chi_geo_KC == 'King County' and two rows where is.na(chi_geo_kc) and empty rows for continous and dates
 
     qa.sql.char <- etl_qa_run_pipeline(
       data_source_type = 'sql_server',
@@ -231,10 +231,10 @@ library(apde.etl)
     expect_equal(nrow(qa.sql.char$final$values), 6)
 
     # continuous only ----
-    qa.rads.cont <- etl_qa_run_pipeline(
-      data_source_type = 'rads',
+    qa.apde.data.cont <- etl_qa_run_pipeline(
+      data_source_type = 'apde.data',
       data_params = list(
-        function_name = 'get_data_birth',
+        function_name = 'birth',
         time_var = 'chi_year',
         time_range = c(2021, 2022),
         cols = c('birth_weight_grams'),
@@ -245,8 +245,8 @@ library(apde.etl)
       output_directory = myOutputFolder
     )
 
-    expect_identical(names(qa.rads.cont), c('config', 'initial', 'final', 'exported'))
-    expect_equal(nrow(qa.rads.cont$final$values), 4) # two years for continuous plus emptry rows for character and date
+    expect_identical(names(qa.apde.data.cont), c('config', 'initial', 'final', 'exported'))
+    expect_equal(nrow(qa.apde.data.cont$final$values), 4) # two years for continuous plus emptry rows for character and date
 
     qa.sql.cont <- etl_qa_run_pipeline(
       data_source_type = 'sql_server',
@@ -264,10 +264,10 @@ library(apde.etl)
     expect_equal(nrow(qa.sql.cont$final$values), 4)
 
     # date only ----
-    qa.rads.date <- etl_qa_run_pipeline(
-      data_source_type = 'rads',
+    qa.apde.data.date <- etl_qa_run_pipeline(
+      data_source_type = 'apde.data',
       data_params = list(
-        function_name = 'get_data_birth',
+        function_name = 'birth',
         time_var = 'chi_year',
         time_range = c(2021, 2022),
         cols = c('mother_date_of_birth'),
@@ -278,8 +278,8 @@ library(apde.etl)
       output_directory = myOutputFolder
     )
 
-    expect_identical(names(qa.rads.date), c('config', 'initial', 'final', 'exported'))
-    expect_equal(nrow(qa.rads.date$final$values), 4) # two years for dates plus empty row for categorical and continous
+    expect_identical(names(qa.apde.data.date), c('config', 'initial', 'final', 'exported'))
+    expect_equal(nrow(qa.apde.data.date$final$values), 4) # two years for dates plus empty row for categorical and continous
 
     qa.sql.date <- etl_qa_run_pipeline(
       data_source_type = 'sql_server',
@@ -351,7 +351,7 @@ library(apde.etl)
         ),
         output_directory = myOutputFolder
       ),
-      "data_source_type must be one of 'r_dataframe', 'sql_server', or 'rads'"
+      "data_source_type must be one of 'r_dataframe', 'sql_server', or 'apde.data'"
     )})
 
   test_that("Need a valid output directory", {
@@ -637,9 +637,9 @@ library(apde.etl)
 
     expect_error(
       test <- etl_qa_run_pipeline(
-        data_source_type = 'rads',
+        data_source_type = 'apde.data',
         data_params = list(
-          function_name = 'get_data_blahblah',
+          function_name = 'blahblah',
           time_var = 'chi_year',
           time_range = c(2021, 2022),
           cols = c('chi_age'),
@@ -654,9 +654,9 @@ library(apde.etl)
 
     expect_error(
       test <- etl_qa_run_pipeline(
-        data_source_type = 'rads',
+        data_source_type = 'apde.data',
         data_params = list(
-          # function_name = 'get_data_birth',
+          # function_name = 'birth',
           time_var = 'chi_year',
           time_range = c(2021, 2022),
           cols = c('chi_age'),
@@ -666,7 +666,7 @@ library(apde.etl)
         ),
         output_directory = myOutputFolder
       ),
-      "For 'rads' data_source_type, data_params must include a 'function_name'."
+      "When `data_source_type = 'apde.data'`, data_params must include a 'function_name'."
     )
 
   })
@@ -675,9 +675,9 @@ library(apde.etl)
 
     expect_error(
       test <- etl_qa_run_pipeline(
-        data_source_type = 'rads',
+        data_source_type = 'apde.data',
         data_params = list(
-          function_name = 'get_data_birth',
+          function_name = 'birth',
           time_var = 'chi_year',
           time_range = c(2021, 2022),
           cols = c('chi_age'),
@@ -692,9 +692,9 @@ library(apde.etl)
 
     expect_message(
       test <- etl_qa_run_pipeline(
-        data_source_type = 'rads',
+        data_source_type = 'apde.data',
         data_params = list(
-          function_name = 'get_data_birth',
+          function_name = 'birth',
           time_var = 'chi_year',
           time_range = c(2021, 2022),
           cols = c('chi_age'),
@@ -713,9 +713,9 @@ library(apde.etl)
 
     expect_error(
       test <- etl_qa_run_pipeline(
-        data_source_type = 'rads',
+        data_source_type = 'apde.data',
         data_params = list(
-          function_name = 'get_data_birth',
+          function_name = 'birth',
           time_var = 'chi_year',
           time_range = c(2021, 2022),
           cols = c('chi_age'),
@@ -730,9 +730,9 @@ library(apde.etl)
 
     expect_message(
       test <- etl_qa_run_pipeline(
-        data_source_type = 'rads',
+        data_source_type = 'apde.data',
         data_params = list(
-          function_name = 'get_data_birth',
+          function_name = 'birth',
           time_var = 'chi_year',
           time_range = c(2021, 2022),
           cols = c('chi_age'),

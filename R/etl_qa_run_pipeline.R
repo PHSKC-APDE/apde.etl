@@ -12,7 +12,7 @@
 #' `apde` package.
 #'
 #' @param data_source_type Character string specifying the type of data source.
-#' Must be one of `'r_dataframe'`, `'sql_server'`, or `'rads'`.
+#' Must be one of `'r_dataframe'`, `'sql_server'`, or `'apde.data'`.
 #' @param connection A DBIConnection object. *Required only when
 #' `data_source_type = 'sql_server'`*
 #' @param data_params List of data related parameters specific to the data source. Not all
@@ -37,15 +37,16 @@
 #'   `data_source_type = 'r_dataframe'`*.
 #'
 #' - `function_name`: Character string specifying the relevant
-#'   `rads::get_data_xxx` function, e.g., `function_name = 'get_data_birth'`.
-#'   *Required only when `data_source_type = 'rads'`*
+#'   `apde.data::xxx` function, e.g., `function_name = 'birth'`, which
+#'   fetches birth data.
+#'   *Required only when `data_source_type = 'apde.data'`*
 #'
 #' - `kingco`: Logical vector of length 1. Identifies whether you want
 #'   limit the data to King County. *Required only when
-#'   `data_source_type = 'rads'`*. Default is `kingco = TRUE`
+#'   `data_source_type = 'apde.data'`*. Default is `kingco = TRUE`
 #'
 #' - `version`: Character string specifying either `'final'` or
-#'   `'stage'`. *Required only when `data_source_type = 'rads'`*.
+#'   `'stage'`. *Required only when `data_source_type = 'apde.data'`*.
 #'   Default is `version = 'stage'`
 #'
 #' - `schema_table`: The name of the schema and table to be accessed
@@ -76,7 +77,7 @@
 #' - `exported`: File paths for exported tables and plots
 #'
 #' @details
-#' The function provides identical output whether using `rads`, providing a
+#' The function provides identical output whether using `apde.data`, providing a
 #' data.table that is in R's memory, or processing data directly on MS SQL Server.
 #' The key is to correctly set up the arguments. Please refer to the examples
 #' below for models that you should follow.
@@ -93,11 +94,11 @@
 #' \dontrun{
 #' # The following three examples generate identical output:
 #'
-#' # Example with RADS
-#' qa.rads <- etl_qa_run_pipeline(
-#'   data_source_type = 'rads',
+#' # Example with apde.data
+#' qa.apde.data <- etl_qa_run_pipeline(
+#'   data_source_type = 'apde.data',
 #'   data_params = list(
-#'     function_name = 'get_data_birth',
+#'     function_name = 'birth',
 #'     time_var = 'chi_year',
 #'     time_range = c(2021, 2022),
 #'     cols = c('chi_age', 'race4', 'birth_weight_grams', 'birthplace_city',
@@ -111,13 +112,13 @@
 #'
 #'
 #' # Example with R dataframe
-#' birth_data <- rads::get_data_birth(year = c(2021:2022),
-#'                                    kingco = F,
-#'                                    cols = c('chi_age', 'race4',
-#'                                    'birth_weight_grams', 'birthplace_city',
-#'                                    'num_prev_cesarean', 'chi_year',
-#'                                    'mother_date_of_birth'),
-#'                                    version = 'final')
+#' birth_data <- apde.data::birth(year = c(2021:2022),
+#'                                kingco = F,
+#'                                cols = c('chi_age', 'race4',
+#'                                'birth_weight_grams', 'birthplace_city',
+#'                                'num_prev_cesarean', 'chi_year',
+#'                                'mother_date_of_birth'),
+#'                                version = 'final')
 #'
 #' qa.df <- etl_qa_run_pipeline(
 #'   data_source_type = 'r_dataframe',
@@ -151,8 +152,8 @@
 #' )
 #'
 #' # Confirmation that the results are identical
-#' all.equal(qa.rads$final, qa.df$final)
-#' all.equal(qa.rads$final, qa.sql$final)
+#' all.equal(qa.apde.data$final, qa.df$final)
+#' all.equal(qa.apde.data$final, qa.sql$final)
 #'
 #' }
 #'
@@ -175,8 +176,8 @@ etl_qa_run_pipeline <- function(connection = NULL,
 
   # Validate arguments ----
   ## Validate data_source_type ----
-  if (!data_source_type %in% c('r_dataframe', 'sql_server', 'rads')) {
-    stop("\U0001f47f\ndata_source_type must be one of 'r_dataframe', 'sql_server', or 'rads'")
+  if (!data_source_type %in% c('r_dataframe', 'sql_server', 'apde.data')) {
+    stop("\U0001f47f\ndata_source_type must be one of 'r_dataframe', 'sql_server', or 'apde.data'")
   }
 
   ## Validate connection ----
@@ -235,16 +236,16 @@ etl_qa_run_pipeline <- function(connection = NULL,
   }
 
   ### data_params$function_name ----
-  if (data_source_type == 'rads' && !'function_name' %in% names(data_params)) {
-    stop("\U0001f47f\nFor 'rads' data_source_type, data_params must include a 'function_name'. Options are limited to:\n",
-         sub(', ([^,]*)$', ' & \\1', paste0(suppressWarnings(grep('get_data_', ls(getNamespace("rads")), value = T)), collapse = ', ')), ".")
-  } else if (data_source_type == 'rads' && !data_params$function_name %in% suppressWarnings(grep('get_data_', ls(getNamespace("rads")), value = T))){
+  if (data_source_type == 'apde.data' && !'function_name' %in% names(data_params)) {
+    stop("\U0001f47f\nWhen `data_source_type = 'apde.data'`, data_params must include a 'function_name'. Options are limited to:\n",
+         paste0(ls(getNamespace("apde.data"))[!grepl('_', ls(getNamespace("apde.data")))], collapse = ', '), ".")
+  } else if (data_source_type == 'apde.data' && !data_params$function_name %in% ls(getNamespace('apde.data'))){
     stop("\U0001f47f\nThe data_params$function_name you provided is invalid. Available options are limited to:\n",
-         sub(', ([^,]*)$', ' & \\1', paste0(suppressWarnings(grep('get_data_', ls(getNamespace("rads")), value = T)), collapse = ', ')), ".")
+         paste0(ls(getNamespace("apde.data"))[!grepl('_', ls(getNamespace("apde.data")))], collapse = ', '), ".")
   }
 
   ### data_params$kingco ----
-    if (data_source_type == 'rads') {
+    if (data_source_type == 'apde.data') {
       if(!'kingco'%in% names(data_params)){
         message("data_params$kingco not provided. Defaulting to TRUE.")
         data_params$kingco <- TRUE
@@ -254,7 +255,7 @@ etl_qa_run_pipeline <- function(connection = NULL,
     }
 
   ### data_params$version ----
-    if (data_source_type == 'rads') {
+    if (data_source_type == 'apde.data') {
       if (!'version' %in% names(data_params)) {
         message("data_params$version not provided. Defaulting to 'stage'.")
         data_params$version <- 'stage'
@@ -393,11 +394,11 @@ etl_qa_run_pipeline <- function(connection = NULL,
 #' # The following examples generate config objects which can be passed to
 #' # etl_qa_initial_results()
 #'
-#' # Example with RADS
-#' config.rads <- etl_qa_setup_config(
-#'   data_source_type = 'rads',
+#' # Example with apde.data
+#' config.apde.data <- etl_qa_setup_config(
+#'   data_source_type = 'apde.data',
 #'   data_params = list(
-#'     function_name = 'get_data_birth',
+#'     function_name = 'birth',
 #'     time_var = 'chi_year',
 #'     time_range = c(2021, 2022),
 #'     cols = c('chi_age', 'race4', 'birth_weight_grams', 'birthplace_city',
@@ -408,11 +409,11 @@ etl_qa_run_pipeline <- function(connection = NULL,
 #'   ),
 #'   output_directory = 'C:/temp/'
 #' )
-#' class(config.rads)
+#' class(config.apde.data)
 #'
 #'
 #' # Example with R data.frame
-#' birth_data <- rads::get_data_birth(year = c(2021:2022),
+#' birth_data <- apde.data::birth(year = c(2021:2022),
 #'                              kingco = F,
 #'                              cols = c('chi_age', 'race4', 'birth_weight_grams',
 #'                              'birthplace_city', 'num_prev_cesarean',
@@ -471,8 +472,8 @@ etl_qa_setup_config <- function(data_source_type,
   }
 
   # Validate input parameters
-  if (!data_source_type %in% c('r_dataframe', 'sql_server', 'rads')) {
-    stop("\U0001f47f\ndata_source_type must be 'r_dataframe', 'sql_server', or 'rads'")
+  if (!data_source_type %in% c('r_dataframe', 'sql_server', 'apde.data')) {
+    stop("\U0001f47f\ndata_source_type must be 'r_dataframe', 'sql_server', or 'apde.data'")
   }
 
   # Validate output_directory
@@ -526,14 +527,14 @@ etl_qa_setup_config <- function(data_source_type,
       stop("\U0001f47f\n'schema_table' should be in the format 'schemaName.tableName', with a period between the schema and table.")
     }
     config$process_location <- 'sql'
-  } else if (data_source_type == 'rads') {
+  } else if (data_source_type == 'apde.data') {
     if (!'function_name' %in% names(data_params)) {
-      stop("\U0001f47f\nFor 'rads' type, data_params must include a 'function_name'")
+      stop("\U0001f47f\nFor 'apde.data' type, data_params must include a 'function_name'")
     }
-    if (!grepl('^get_data_', data_params$function_name)){
-      stop("\U0001f47f\nFor 'rads' data_source_type, data_params must include a 'function_name' that begins with 'get_data_', e.g., 'get_data_birth'")
+    if (!data_params$function_name %in% ls(getNamespace("apde.data"))[!grepl('_', ls(getNamespace("apde.data")))]){
+      stop("\U0001f47f\nWhen `data_source_type = 'apde.data'`, data_params must include a valid 'function_name' (e.g., 'birth', 'chars', 'brfss', etc.)")
     }
-    # Add 'kingco' and 'version' only for 'rads' type
+    # Add 'kingco' and 'version' only for 'apde.data' type
     config$data_params$kingco <- data_params$kingco %||% TRUE
     config$data_params$version <- data_params$version %||% 'stage'
 
@@ -591,9 +592,9 @@ etl_qa_setup_config <- function(data_source_type,
 #'
 #' # Step 1: generate a config object
 #' myconfig <- etl_qa_setup_config(
-#'   data_source_type = 'rads',
+#'   data_source_type = 'apde.data',
 #'   data_params = list(
-#'     function_name = 'get_data_birth',
+#'     function_name = 'birth',
 #'     time_var = 'chi_year',
 #'     time_range = c(2021, 2022),
 #'     cols = c('chi_age', 'race4', 'birth_weight_grams', 'birthplace_city',
@@ -625,8 +626,8 @@ etl_qa_initial_results <- function(config) {
   data_list <- NULL
   if (config$data_source_type == 'r_dataframe') {
     data_list <- process_r_dataframe(config)
-  } else if (config$data_source_type == 'rads') {
-    data_list <- process_rads_data(config)
+  } else if (config$data_source_type == 'apde.data') {
+    data_list <- process_apde_data(config)
   } else if (config$data_source_type == 'sql_server') {
     data_list <- process_sql_server(config)
   } else {
@@ -661,7 +662,7 @@ process_r_dataframe <- function(config) {
                get(config$time_var) <= config$time_range[2]]
   }
 
-  # Identify CHI variables (if needed and only for data.frame since rads data filtered already) ----
+  # Identify CHI variables (if needed and only for data.frame since apde.data data filtered already) ----
   if (config$data_source_type == 'r_dataframe') {
     possiblecols <- names(dt)
 
@@ -800,8 +801,8 @@ process_r_dataframe <- function(config) {
        chi_standards = chi_std_comparison)
 }
 
-# process_rads_data() - Function to process rads::get_data_xxx() ----
-#' Process RADS data for ETL QA
+# process_apde_data() - Function to process apde.data::xxx() ----
+#' Process apde.data data for ETL QA
 #'
 #' Used by `etl_qa_initial_results()`
 #'
@@ -809,7 +810,7 @@ process_r_dataframe <- function(config) {
 #' @noRd
 #'
 #'
-process_rads_data <- function(config) {
+process_apde_data <- function(config) {
   # Validate config$data_params$kingco
   config$data_params$kingco <- config$data_params$kingco %||% TRUE
   if (!is.logical(config$data_params$kingco) || length(config$data_params$kingco) != 1 || is.na(config$data_params$kingco)) {
@@ -823,7 +824,7 @@ process_rads_data <- function(config) {
   }
 
   # Identify CHI variables (if needed) ----
-  possiblecols <- rads::quiet(apde.data::list_data_columns(gsub('get_data_', '', config$data_params$function_name))[]$var.names)
+  possiblecols <- rads::quiet(apde.data::list_data_columns(config$data_params$function_name)[]$var.names)
 
 
   if(!config$data_params$time_var %in% possiblecols){
@@ -844,8 +845,8 @@ process_rads_data <- function(config) {
     )),
     possiblecols))
 
-  # Use the appropriate get_data_xxx function ----
-  data_func <- utils::getFromNamespace(config$data_params$function_name, "rads") # dynamically get the get_data_xxx function without loading all of rads
+  # Use the appropriate apde.data::xxx function ----
+  data_func <- utils::getFromNamespace(config$data_params$function_name, 'apde.data') # dynamically get the function without loading all of apde.data
 
   dt <- data_func(year = config$time_range[1]:config$time_range[2],
                   cols = unique(c(config$time_var, config$data_params$cols)),
@@ -1485,9 +1486,9 @@ generate_categorical_query <- function(config) {
 #'
 #' # Step 1: generate a config object
 #' myconfig <- etl_qa_setup_config(
-#'   data_source_type = 'rads',
+#'   data_source_type = 'apde.data',
 #'   data_params = list(
-#'     function_name = 'get_data_birth',
+#'     function_name = 'birth',
 #'     time_var = 'chi_year',
 #'     time_range = c(2021, 2022),
 #'     cols = c('chi_age', 'race4', 'birth_weight_grams', 'birthplace_city',
@@ -1663,9 +1664,9 @@ etl_qa_final_results <- function(initial_qa_results, config) {
 #'
 #' # Step 1: generate a config object
 #' myconfig <- etl_qa_setup_config(
-#'   data_source_type = 'rads',
+#'   data_source_type = 'apde.data',
 #'   data_params = list(
-#'     function_name = 'get_data_birth',
+#'     function_name = 'birth',
 #'     time_var = 'chi_year',
 #'     time_range = c(2021, 2022),
 #'     cols = c('chi_age', 'race4', 'birth_weight_grams', 'birthplace_city',
@@ -1700,8 +1701,8 @@ etl_qa_export_results <- function(qa_results, config) {
   # Identify the data source ----
   if(config$data_source_type == 'sql_server'){
     datasource = config$data_params$schema_table
-  } else if (config$data_source_type == 'rads') {
-    datasource = paste0('rads_', config$data_params$function_name, '_(', config$data_params$version, ')')
+  } else if (config$data_source_type == 'apde.data') {
+    datasource = paste0('apde.data_', config$data_params$function_name, '_(', config$data_params$version, ')')
   } else {
     datasource = config$data_params$data_source
   }
