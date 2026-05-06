@@ -823,7 +823,8 @@ process_rads_data <- function(config) {
   }
 
   # Identify CHI variables (if needed) ----
-  possiblecols <- rads::quiet(rads::list_dataset_columns(gsub('get_data_', '', config$data_params$function_name))[]$var.names)
+  possiblecols <- rads::quiet(apde.data::list_data_columns(gsub('get_data_', '', config$data_params$function_name))[]$var.names)
+
 
   if(!config$data_params$time_var %in% possiblecols){
     stop("\U1F6D1\nThe variable specified in data_params$time_var is not available in this dataset.")
