@@ -1787,6 +1787,26 @@ etl_qa_export_results <- function(qa_results, config) {
 }
 
 # Helper functions for plotting ----
+## integer_year_breaks() ----
+#' Generate integer-only axis breaks for year-based x-axes
+#'
+#' Used by `plotCATEGORICAL()`, `plotCONTINUOUS()`, `plotDATE()`, and `plotMISSING()`
+#'
+#' @keywords internal
+#' @noRd
+#'
+integer_year_breaks <- function(max_breaks = 10) {
+  function(x) {
+    myrange <- range(x, na.rm = TRUE)
+    all_years <- seq(floor(myrange[1]), ceiling(myrange[2]), by = 1)
+    if (length(all_years) <= max_breaks) {
+      all_years
+    } else {
+      unique(round(scales::breaks_pretty(n = max_breaks)(x)))
+    }
+  }
+}
+
 ## plotCATEGORICAL() ----
 #' Plot categorical data
 #'
@@ -1809,7 +1829,7 @@ plotCATEGORICAL <- function(var_data, time_var, mytitle) {
     ggplot2::geom_line(ggplot2::aes(linewidth = ifelse(is.na(value), 1.5, 2))) +
     ggplot2::geom_point(size = 2.5, show.legend = FALSE) +
     ggplot2::scale_x_continuous(name = time_var,
-                                breaks = scales::breaks_pretty(n = 10),
+                                breaks = integer_year_breaks(max_breaks = 10),
                                 labels = scales::label_number(accuracy = 1, big.mark = '')) +
     ggplot2::scale_y_continuous(limits = c(0, 1)) +
     ggplot2::scale_color_manual(values = c(scales::hue_pal()(length(unique(stats::na.omit(var_data$value)))), "black"),
@@ -1874,7 +1894,7 @@ plotCONTINUOUS <- function(var_data, time_var, mytitle) {
                                   "Maximum" = "#33a02c")) +
 
     ggplot2::scale_x_continuous(name = time_var,
-                                breaks = scales::breaks_pretty(n = 10),
+                                breaks = integer_year_breaks(max_breaks = 10),
                                 labels = scales::label_number(accuracy = 1, big.mark = '')) +
     ggplot2::labs(title = mytitle, subtitle = paste0('', var_data$varname[1]), x = time_var, y = var_data$varname[1]) +
     ggplot2::theme_bw() +
@@ -1924,7 +1944,7 @@ plotDATE <- function(var_data, time_var, mytitle) {
                                   "Median" = "#b2df8a",
                                   "Maximum" = "#33a02c")) +
     ggplot2::scale_x_continuous(name = time_var,
-                                breaks = scales::breaks_pretty(n = 10),
+                                breaks = integer_year_breaks(max_breaks = 10),
                                 labels = scales::label_number(accuracy = 1, big.mark = '')) +
     ggplot2::scale_y_date(date_labels = "%Y-%m-%d",
                  limits = c(min(var_data$min_date), max(var_data$max_date)),
@@ -1958,7 +1978,7 @@ plotMISSING <- function(plot_data, time_var, mytitle) {
       ggplot2::geom_line(linewidth = 2) +
       ggplot2::facet_wrap('varname', ncol = 4) +
       ggplot2::scale_x_continuous(name = time_var,
-                                  breaks = scales::breaks_pretty(n = 8),
+                                  breaks = integer_year_breaks(max_breaks = 10),
                                   labels = scales::label_number(accuracy = 1, big.mark = '')) +
       ggplot2::scale_y_continuous(limits = c(0, 1), labels = scales::percent_format(accuracy = 1L)) +
       ggplot2::ylab('Percent missing') +
