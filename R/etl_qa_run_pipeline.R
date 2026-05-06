@@ -21,7 +21,7 @@
 #' - `check_chi`: Logical vector of length 1. When `check_chi = TRUE`,
 #'   function will add any available CHI related variables to `cols` and
 #'   will assess whether their values align with standards in
-#'   `rads.data::misc_chi_byvars`. Default is `FALSE`
+#'   `apde.chi.tools::chi_standard_varnames`. Default is `FALSE`
 #'
 #' - `cols`: Character vector specifying the column names to analyze,
 #'   e.g., `cols = c('race4', 'birth_weight_grams', 'birthplace_city')`
@@ -135,7 +135,7 @@
 #'
 #' # Example with SQL Server
 #' library(DBI)
-#' myconnection <- rads::validate_hhsaw_key()
+#' myconnection <- apde.data::authenticate_hhsaw()
 #' qa.sql <- etl_qa_run_pipeline(
 #'   data_source_type = 'sql_server',
 #'   connection = myconnection,
@@ -187,7 +187,7 @@ etl_qa_run_pipeline <- function(connection = NULL,
   } else if (data_source_type == 'sql_server' && is.null(connection)) {
     stop("\U0001f47f\nFor 'sql_server' data_source_type, a DBIConnection object must be provided for the connection argument")
   } else if (data_source_type != 'sql_server' && !is.null(connection)) {
-    warning("\U00026A0\nThe connection argument is ignored when data_source_type != 'sql_server'")
+    warning("\u26A0\ufe0f\nThe connection argument is ignored when data_source_type != 'sql_server'")
   }
 
   ## Validate data_params ----
@@ -209,7 +209,7 @@ etl_qa_run_pipeline <- function(connection = NULL,
   if((!'cols' %in% names(data_params) || is.null(data_params$cols) ) & isFALSE(data_params$check_chi)){
     stop("\U0001f47f\nYou must specify the 'data_params$cols' argument when data_params$check_chi is FALSE or not provided.")
   } else if ((!'cols' %in% names(data_params) || is.null(data_params$cols) ) & isTRUE(data_params$check_chi)){
-    warning("\U00026A0\nYou did not specify the 'data_params$cols' argument. Since data_params$check_chi = TRUE, the code will run, \n",
+    warning("\u26A0\ufe0f\nYou did not specify the 'data_params$cols' argument. Since data_params$check_chi = TRUE, the code will run, \n",
     "however it might encounter an error if there are no CHI related variables in your data.")
   }
 
@@ -435,7 +435,7 @@ etl_qa_run_pipeline <- function(connection = NULL,
 #'
 #' # Example with SQL Server
 #' library(DBI)
-#' myconnection <- rads::validate_hhsaw_key()
+#' myconnection <- apde.data::authenticate_hhsaw()
 #' config.sql <- etl_qa_setup_config(
 #'   data_source_type = 'sql_server',
 #'   connection = myconnection,
@@ -482,7 +482,7 @@ etl_qa_setup_config <- function(data_source_type,
     }
   } else {
     output_directory <- getwd()
-    warning("\U00026A0\nNo output_directory specified. Using current working directory: ", output_directory, ".")
+    warning("\u26A0\ufe0f\nNo output_directory specified. Using current working directory: ", output_directory, ".")
   }
 
   # Validate check_chi
@@ -584,7 +584,7 @@ etl_qa_setup_config <- function(data_source_type,
 #' - `vals_categorical`: A frequency table of the top 8 most frequent values
 #'         of categorical variable (and numerics or dates with < your specified `distinct_threshold` distinct values) PLUS a rows for `NA`
 #'         PLUS a row for all 'Other values'
-#' - `chi_standards`: Comparison of CHI (Community Health Indicator) variables values with those expected based on `rads.data::misc_chi_byvars`
+#' - `chi_standards`: Comparison of CHI (Community Health Indicator) variables values with those expected based on `apde.chi.tools::chi_standard_varnames`
 #'
 #' @examples
 #' \dontrun{
@@ -670,7 +670,7 @@ process_r_dataframe <- function(config) {
     }
 
     if(isTRUE(config$data_params$check_chi)){
-      byvars <- unique(rads.data::misc_chi_byvars$varname)
+      byvars <- unique(apde.chi.tools::chi_standard_varnames$varname)
       chivars <- c(grep('^chi_', possiblecols, value = TRUE))
     } else {byvars <- NULL; chivars <- NULL}
 
@@ -757,7 +757,7 @@ process_r_dataframe <- function(config) {
   # Comparison with CHI standards (if needed) ----
   if(isTRUE(config$data_params$check_chi)){
     # Get all gold standard CHI varnames and groups
-    chi_std <- unique(rads.data::misc_chi_byvars[, list(varname, group, chi = 1L)])
+    chi_std <- unique(apde.chi.tools::chi_standard_varnames[, list(varname, group, chi = 1L)])
 
     # Identify all categorical chi variables that are in the data.frame/data.table
     categorical_cols <- setdiff(names(dt), c(config$time_var, numeric_cols, date_cols))
@@ -770,7 +770,7 @@ process_r_dataframe <- function(config) {
     your_data <- data.table::rbindlist(lapply(chi_dtvars, function(col) {
       unique(dt[, list(varname = col,
                     group = as.character(.SD[[col]])),
-                by = chi_year,
+                by = get(config$time_var),
                 .SDcols = col
       ][, your_data := 1L])
     }))
@@ -781,13 +781,13 @@ process_r_dataframe <- function(config) {
     chi_std_comparison <- merge(your_data,
                                 chi_std,
                                 by = c('varname', 'group'),
-                                all = T)[, list(chi_year, varname, group, your_data, chi)]
+                                all = T)[, .SD, .SDcols = c(config$data_params$time_var, 'varname', 'group', 'your_data', 'chi')]
 
     chi_std_comparison[is.na(your_data), your_data := 0]
     chi_std_comparison[is.na(chi), chi := 0]
 
     # use summary function
-    comp_2_chi_std(chi_std_comparison)
+    comp_2_chi_std(chi_std_comparison, time_var = config$data_params$time_var)
   } else {
     chi_std_comparison = data.table::data.table() # create a data.table with zero columns and zero rows, just to have a data.table object so rest of code will work
   }
@@ -823,14 +823,15 @@ process_rads_data <- function(config) {
   }
 
   # Identify CHI variables (if needed) ----
-  possiblecols <- rads::quiet(rads::list_dataset_columns(gsub('get_data_', '', config$data_params$function_name))[]$var.names)
+  possiblecols <- rads::quiet(apde.data::list_data_columns(gsub('get_data_', '', config$data_params$function_name))[]$var.names)
+
 
   if(!config$data_params$time_var %in% possiblecols){
     stop("\U1F6D1\nThe variable specified in data_params$time_var is not available in this dataset.")
   }
 
   if(isTRUE(config$data_params$check_chi)){
-    byvars <- unique(rads.data::misc_chi_byvars$varname)
+    byvars <- unique(apde.chi.tools::chi_standard_varnames$varname)
     chivars <- c(grep('^chi_', possiblecols, value = TRUE))
   } else {byvars <- NULL; chivars <- NULL}
 
@@ -838,7 +839,7 @@ process_rads_data <- function(config) {
     unique(c(chivars,
              byvars,
              config$data_params$cols,
-             'chi_year',
+             config$data_params$time_var,
              ifelse(isTRUE(config$data_params$kingco), 'chi_geo_kc', '')
     )),
     possiblecols))
@@ -882,7 +883,7 @@ process_sql_server <- function(config) {
   }
 
   if(isTRUE(config$data_params$check_chi)){
-    byvars <- unique(rads.data::misc_chi_byvars$varname)
+    byvars <- unique(apde.chi.tools::chi_standard_varnames$varname)
     chivars <- c(grep('^chi_', possiblecols, value = TRUE))
   } else {byvars <- NULL; chivars <- NULL}
 
@@ -943,7 +944,7 @@ process_sql_server <- function(config) {
     # Get all gold standard CHI varnames and groups
     # use unique(...) because some varname group combos duplicated because birth
     # data has different `cat` than other data
-    chi_std <- unique(rads.data::misc_chi_byvars[, list(varname, group, chi = 1L)])
+    chi_std <- unique(apde.chi.tools::chi_standard_varnames[, list(varname, group, chi = 1L)])
 
     # Limit chi_std to categorical variables in frequency table
     chi_std <- chi_std[varname %in% unique(categorical_freq$varname)]
@@ -952,20 +953,22 @@ process_sql_server <- function(config) {
     categorical_freq <- categorical_freq[varname %in% unique(chi_std$varname)]
 
     # Tidy frequency table
-    categorical_freq <- categorical_freq[, list(chi_year, varname, group = value, your_data = 1L)]
+    categorical_freq <- categorical_freq[, .SD, .SDcols = c(config$data_params$time_var, 'varname', 'value')]
+    data.table::setnames(categorical_freq, 'value', 'group')
+    categorical_freq[, your_data := 1]
     categorical_freq <- categorical_freq[!is.na(group)]
 
     # Merge CHI standards onto actual data ----
     chi_std_comparison <- merge(categorical_freq,
                                 chi_std,
                                 by = c('varname', 'group'),
-                                all = T)[, list(chi_year, varname, group, your_data, chi)]
+                                all = T)[, .SD, .SDcols = c(config$data_params$time_var, 'varname', 'group', 'your_data', 'chi')]
 
     chi_std_comparison[is.na(your_data), your_data := 0]
     chi_std_comparison[is.na(chi), chi := 0]
 
     # use summary function
-    comp_2_chi_std(chi_std_comparison)
+    comp_2_chi_std(chi_std_comparison, time_var = config$data_params$time_var)
   } else {
     chi_std_comparison = data.table::data.table() # create a data.table with zero columns and zero rows, just to have a data.table object so rest of code will work
   }
@@ -980,7 +983,7 @@ process_sql_server <- function(config) {
 
 # Helper functions in R code ----
 ## comp_2_chi_std() ----
-#' Compare data to CHI standards in rads.data::misc_chi_byvars
+#' Compare data to CHI standards in apde.chi.tools::chi_standard_varnames
 #'
 #' `used by process_sql_server()` & 'process_r_dataframe()'
 #'
@@ -988,7 +991,7 @@ process_sql_server <- function(config) {
 #' @noRd
 #'
 #'
-comp_2_chi_std <- function(myCHIcomparison){
+comp_2_chi_std <- function(myCHIcomparison, time_var){
   # Expects data.table with chi_year <integer>, varname <character>, group <character>, your_data <integer/logical>, chi <integer/logical>
   # Identify data in CHI standard table that is not in the dataset ----
   only_chi <- myCHIcomparison[your_data == 0][, list(varname, group)]
@@ -1001,8 +1004,8 @@ comp_2_chi_std <- function(myCHIcomparison){
                                   align = c('r', 'l', 'l', 'l'))
 
   if (nrow(only_chi) > 0){
-    message("\U0001f626\U0001f47f\U0001F92C\U00026A0 \n",
-            "The following varname and group combinations exist in the rads.data::misc_chi_byvars \n",
+    message("\U0001f626\U0001f47f\U0001F92C\u26A0\ufe0f \n",
+            "The following varname and group combinations exist in the apde.chi.tools::chi_standard_varnames \n",
             "standards but are missing from your dataset. Please ensure your dataset complies with\n",
             "the CHI standard.\n\n",
             paste(formatted_table, collapse = "\n"), '\n')
@@ -1010,20 +1013,20 @@ comp_2_chi_std <- function(myCHIcomparison){
 
   # Identify data in mydata that is not the CHI standard table ----
   only_your_data <- myCHIcomparison[chi == 0]
-  only_your_data <- only_your_data[, list(chi_year = rads::format_time(chi_year)), list(varname, group)]
+  only_your_data <- only_your_data[, list(chi_year = rads::format_time(get(time_var))), list(varname, group)]
   data.table::setorder(only_your_data, varname, group)
   formatted_table2 <- knitr::kable(only_your_data[, list(chi_year, varname, group)],
                                    format = "pipe",
                                    align = c('r', 'l', 'l'))
   if (nrow(only_your_data) > 0){
-    message("\U0001f626\U0001f47f\U0001F92C\U00026A0 \nThe following varname & group combinations in your table are not valid\n",
-            "when compared to rads.data::misc_chi_byvars:\n\n",
+    message("\U0001f626\U0001f47f\U0001F92C\u26A0\ufe0f \nThe following varname & group combinations in your table are not valid\n",
+            "when compared to apde.chi.tools::chi_standard_varnames:\n\n",
             paste(formatted_table2, collapse = "\n"), '\n')
   }
 
   # Give message of success if there are no problems ----
   if (nrow(only_your_data) == 0 && nrow(only_chi) == 0){
-    message("\U0001f973\U0001f389\nAll of the CHI variables found in your dataset are formatted according to the standards in rads.data::misc_chi_byvars!\n")
+    message("\U0001f973\U0001f389\nAll of the CHI variables found in your dataset are formatted according to the standards in apde.chi.tools::chi_standard_varnames!\n")
   }
 
 }
@@ -1475,7 +1478,7 @@ generate_categorical_query <- function(config) {
 #' @return A list containing formatted and combined results that consists of:
 #' - `missingness`: Structured summary of the proportion of missing data per variable and time point
 #' - `values`: Combined table with the frequency of categorical variables and simple statistics for numeric and date / datetime variables
-#' - `chi_standards`: Comparison of CHI (Community Health Indicator) variables values with those expected based on `rads.data::misc_chi_byvars`
+#' - `chi_standards`: Comparison of CHI (Community Health Indicator) variables values with those expected based on `apde.chi.tools::chi_standard_varnames`
 #'
 #' @examples
 #' \dontrun{
@@ -1708,7 +1711,7 @@ etl_qa_export_results <- function(qa_results, config) {
   if(nrow(mi100) > 0){
     mi100vars <- paste0(unique(mi100$varname), collapse  = ', ') # string of all 100% missing separated by comma
     mi100vars <- sub(", ([^,]*)$", " & \\1", mi100vars) # replace last comma with ampersand
-    warning("\n\U00026A0\nThe following variables are 100% missing across all time points and therefore DO NOT have value plots:\n",
+    warning("\n\u26A0\ufe0f\nThe following variables are 100% missing across all time points and therefore DO NOT have value plots:\n",
             mi100vars, immediate.=TRUE)
     mi100vars <- unique(mi100$varname) # save a clean vector of all variables with 100% missing data
   } else {mi100vars <- c() }
@@ -1789,6 +1792,9 @@ etl_qa_export_results <- function(qa_results, config) {
 #'
 #'
 plotCATEGORICAL <- function(var_data, time_var, mytitle) {
+  # Drop rows for years without data because some questions asked alternating years
+  var_data <- var_data[, if(any(proportion != 0)) .SD, by = time_period]
+
   value_levels <- levels(factor(var_data$value, exclude = NULL))
   linetypes <- rep("solid", length(value_levels))
   names(linetypes) <- value_levels
@@ -1796,7 +1802,10 @@ plotCATEGORICAL <- function(var_data, time_var, mytitle) {
 
   ggplot2::ggplot(var_data, ggplot2::aes(x = time_period, y = proportion, color = value, linetype = value)) +
     ggplot2::geom_line(ggplot2::aes(linewidth = ifelse(is.na(value), 1.5, 2))) +
-    ggplot2::scale_x_continuous(name = time_var, breaks = seq(min(var_data[['time_period']]), max(var_data[['time_period']]), length.out = 5)) +
+    ggplot2::geom_point(size = 2.5, show.legend = FALSE) +
+    ggplot2::scale_x_continuous(name = time_var,
+                                breaks = scales::breaks_pretty(n = 10),
+                                labels = scales::label_number(accuracy = 1, big.mark = '')) +
     ggplot2::scale_y_continuous(limits = c(0, 1)) +
     ggplot2::scale_color_manual(values = c(scales::hue_pal()(length(unique(stats::na.omit(var_data$value)))), "black"),
                        na.value = "black") +
@@ -1824,6 +1833,9 @@ plotCATEGORICAL <- function(var_data, time_var, mytitle) {
 #' @noRd
 #'
 plotCONTINUOUS <- function(var_data, time_var, mytitle) {
+  # Drop rows for years without data because some questions asked alternating years
+    var_data <- var_data[!is.na(mean)]
+
   # Typical case where there is more than 1 row of data
   if(nrow(var_data[!is.na(mean)]) > 1){
     plot <- ggplot2::ggplot(var_data) +
@@ -1831,10 +1843,14 @@ plotCONTINUOUS <- function(var_data, time_var, mytitle) {
       ggplot2::geom_line(ggplot2::aes(x = time_period, y = mean, color = "Mean", linetype = "Mean"), linewidth = 1.5) +
       ggplot2::geom_line(ggplot2::aes(x = time_period, y = median, color = "Median", linetype = "Median"), linewidth = 1.5) +
       ggplot2::geom_line(ggplot2::aes(x = time_period, y = max, color = "Maximum", linetype = "Maximum"), linewidth = 2) +
+      ggplot2::geom_point(ggplot2::aes(x = time_period, y = min, color = "Minimum"), size = 2.5, show.legend = FALSE) +
+      ggplot2::geom_point(ggplot2::aes(x = time_period, y = mean, color = "Mean"), size = 2.5, show.legend = FALSE) +
+      ggplot2::geom_point(ggplot2::aes(x = time_period, y = median, color = "Median"), size = 2.5, show.legend = FALSE) +
+      ggplot2::geom_point(ggplot2::aes(x = time_period, y = max, color = "Maximum"), size = 2.5, show.legend = FALSE) +
       ggplot2::scale_linetype_manual(name = "Stats",
                             values = c("Minimum" = "solid",
-                                       "Mean" = "dotted",
-                                       "Median" = "1212",
+                                       "Mean" = "solid",
+                                       "Median" = "solid",
                                        "Maximum" = "solid"))
 
   } else if (nrow(var_data[!is.na(mean)]) == 1) {
@@ -1847,17 +1863,19 @@ plotCONTINUOUS <- function(var_data, time_var, mytitle) {
 
   plot <- plot +
     ggplot2::scale_color_manual(name = "Stats",
-                       values = c("Minimum" = "#2C7BB6",
-                                  "Mean" = "#D7191C",
-                                  "Median" = "#ABDDA4",
-                                  "Maximum" = "#FDAE61")) +
+                       values = c("Minimum" = "#a6cee3",
+                                  "Mean" = "#1f78b4",
+                                  "Median" = "#b2df8a",
+                                  "Maximum" = "#33a02c")) +
 
-    ggplot2::scale_x_continuous(name = time_var, breaks = seq(min(var_data[['time_period']]), max(var_data[['time_period']]), length.out = 5)) +
+    ggplot2::scale_x_continuous(name = time_var,
+                                breaks = scales::breaks_pretty(n = 10),
+                                labels = scales::label_number(accuracy = 1, big.mark = '')) +
     ggplot2::labs(title = mytitle, subtitle = paste0('', var_data$varname[1]), x = time_var, y = var_data$varname[1]) +
     ggplot2::theme_bw() +
     ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5),
           plot.subtitle = ggplot2::element_text(hjust = 0.5, face = 'bold', size = 16)) +
-    ggplot2::guides(color = ggplot2::guide_legend(override.aes = list(linetype = c("solid", "dotted", "1212", "solid"))))
+    ggplot2::guides(color = ggplot2::guide_legend(override.aes = list(linetype = c("solid", "solid", "solid", "solid"))))
 
   return(plot)
 }
@@ -1872,15 +1890,21 @@ plotCONTINUOUS <- function(var_data, time_var, mytitle) {
 #'
 #'
 plotDATE <- function(var_data, time_var, mytitle) {
+  # Drop rows for years without data because some questions asked alternating years
+  var_data <- var_data[!is.na(median_date)]
+
   # Typical case where there is more than 1 row of data
   if (nrow(var_data[!is.na(median_date)]) > 1){
     plot <-   ggplot2::ggplot(var_data[!is.na(median_date)]) +
       ggplot2::geom_line(ggplot2::aes(x = time_period, y = min_date, color = "Minimum", linetype = "Minimum"), linewidth = 2) +
       ggplot2::geom_line(ggplot2::aes(x = time_period, y = median_date, color = "Median", linetype = "Median"), linewidth = 1.5) +
       ggplot2::geom_line(ggplot2::aes(x = time_period, y = max_date, color = "Maximum", linetype = "Maximum"), linewidth = 2) +
+      ggplot2::geom_point(ggplot2::aes(x = time_period, y = min_date, color = "Minimum"), size = 2.5, show.legend = FALSE) +
+      ggplot2::geom_point(ggplot2::aes(x = time_period, y = median_date, color = "Median"), size = 2.5, show.legend = FALSE) +
+      ggplot2::geom_point(ggplot2::aes(x = time_period, y = max_date, color = "Maximum"), size = 2.5, show.legend = FALSE) +
       ggplot2::scale_linetype_manual(name = "Stats",
                             values = c("Minimum" = "solid",
-                                       "Median" = "1212",
+                                       "Median" = "solid",
                                        "Maximum" = "solid"))
   } else if (nrow(var_data[!is.na(median_date)]) == 1){
     plot <-   ggplot2::ggplot(var_data[!is.na(median_date)]) +
@@ -1891,10 +1915,12 @@ plotDATE <- function(var_data, time_var, mytitle) {
 
   plot <- plot +
     ggplot2::scale_color_manual(name = "Stats",
-                       values = c("Minimum" = "#2C7BB6",
-                                  "Median" = "#ABDDA4",
-                                  "Maximum" = "#FDAE61")) +
-    ggplot2::scale_x_continuous(name = time_var, breaks = seq(min(var_data[['time_period']]), max(var_data[['time_period']]), length.out = 5)) +
+                       values = c("Minimum" = "#a6cee3",
+                                  "Median" = "#b2df8a",
+                                  "Maximum" = "#33a02c")) +
+    ggplot2::scale_x_continuous(name = time_var,
+                                breaks = scales::breaks_pretty(n = 10),
+                                labels = scales::label_number(accuracy = 1, big.mark = '')) +
     ggplot2::scale_y_date(date_labels = "%Y-%m-%d",
                  limits = c(min(var_data$min_date), max(var_data$max_date)),
                  # date_breaks = "5 year" # commented out because never know the scale of dates being assessed
@@ -1903,7 +1929,7 @@ plotDATE <- function(var_data, time_var, mytitle) {
     ggplot2::theme_bw() +
     ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5),
           plot.subtitle = ggplot2::element_text(hjust = 0.5, face = 'bold', size = 16)) +
-    ggplot2::guides(color = ggplot2::guide_legend(override.aes = list(linetype = c("solid", "1212", "solid"))))
+    ggplot2::guides(color = ggplot2::guide_legend(override.aes = list(linetype = c("solid", "solid", "solid"))))
 
   return(plot)
 }
@@ -1926,7 +1952,9 @@ plotMISSING <- function(plot_data, time_var, mytitle) {
       ggplot2::geom_point(size = 2.5) +
       ggplot2::geom_line(linewidth = 2) +
       ggplot2::facet_wrap('varname', ncol = 4) +
-      ggplot2::scale_x_continuous(name = time_var, breaks = seq(min(plot_data[['time_period']]), max(plot_data[['time_period']]), length.out = 5)) +
+      ggplot2::scale_x_continuous(name = time_var,
+                                  breaks = scales::breaks_pretty(n = 8),
+                                  labels = scales::label_number(accuracy = 1, big.mark = '')) +
       ggplot2::scale_y_continuous(limits = c(0, 1), labels = scales::percent_format(accuracy = 1L)) +
       ggplot2::ylab('Percent missing') +
       ggplot2::ggtitle(mytitle) +

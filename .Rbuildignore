@@ -3,3 +3,5 @@
 ^LICENSE\.md$
 ^tests/manual$
 ^quarto_docs$
+^\.positai$
+^\.claude$
