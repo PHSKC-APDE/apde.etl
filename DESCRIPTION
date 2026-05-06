@@ -1,6 +1,6 @@
 Package: apde.etl
 Title: APDE Tools for ETL (Extract, Transform, & Load) Procesess
-Version: 1.01.4
+Version: 2.0.0
 Authors@R: 
     person("Danny", "Colombara", , "dcolombara@kingcounty.gov", role = c("aut", "cre"))
 Description: Provides tools for ETL and informatics processes.
@@ -9,6 +9,8 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 Imports: 
+    apde.chi.tools, 
+    apde.data,
     blastula, 
     configr,
     data.table,
@@ -22,7 +24,6 @@ Imports:
     odbc,
     openxlsx, 
     rads, 
-    rads.data,
     RODBC,
     scales, 
     shiny, 

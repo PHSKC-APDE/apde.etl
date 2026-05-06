@@ -54,11 +54,11 @@ by \code{\link[=etl_qa_run_pipeline]{etl_qa_run_pipeline()}}. Please review that
 # The following examples generate config objects which can be passed to
 # etl_qa_initial_results()
 
-# Example with RADS
-config.rads <- etl_qa_setup_config(
-  data_source_type = 'rads',
+# Example with apde.data
+config.apde.data <- etl_qa_setup_config(
+  data_source_type = 'apde.data',
   data_params = list(
-    function_name = 'get_data_birth',
+    function_name = 'birth',
     time_var = 'chi_year',
     time_range = c(2021, 2022),
     cols = c('chi_age', 'race4', 'birth_weight_grams', 'birthplace_city',
@@ -69,11 +69,11 @@ config.rads <- etl_qa_setup_config(
   ),
   output_directory = 'C:/temp/'
 )
-class(config.rads)
+class(config.apde.data)
 
 
 # Example with R data.frame
-birth_data <- rads::get_data_birth(year = c(2021:2022),
+birth_data <- apde.data::birth(year = c(2021:2022),
                              kingco = F,
                              cols = c('chi_age', 'race4', 'birth_weight_grams',
                              'birthplace_city', 'num_prev_cesarean',
