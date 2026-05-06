@@ -21,7 +21,7 @@
 #' - `check_chi`: Logical vector of length 1. When `check_chi = TRUE`,
 #'   function will add any available CHI related variables to `cols` and
 #'   will assess whether their values align with standards in
-#'   `rads.data::misc_chi_byvars`. Default is `FALSE`
+#'   `apde.chi.tools::chi_standard_varnames`. Default is `FALSE`
 #'
 #' - `cols`: Character vector specifying the column names to analyze,
 #'   e.g., `cols = c('race4', 'birth_weight_grams', 'birthplace_city')`
@@ -584,7 +584,7 @@ etl_qa_setup_config <- function(data_source_type,
 #' - `vals_categorical`: A frequency table of the top 8 most frequent values
 #'         of categorical variable (and numerics or dates with < your specified `distinct_threshold` distinct values) PLUS a rows for `NA`
 #'         PLUS a row for all 'Other values'
-#' - `chi_standards`: Comparison of CHI (Community Health Indicator) variables values with those expected based on `rads.data::misc_chi_byvars`
+#' - `chi_standards`: Comparison of CHI (Community Health Indicator) variables values with those expected based on `apde.chi.tools::chi_standard_varnames`
 #'
 #' @examples
 #' \dontrun{
@@ -670,7 +670,7 @@ process_r_dataframe <- function(config) {
     }
 
     if(isTRUE(config$data_params$check_chi)){
-      byvars <- unique(rads.data::misc_chi_byvars$varname)
+      byvars <- unique(apde.chi.tools::chi_standard_varnames$varname)
       chivars <- c(grep('^chi_', possiblecols, value = TRUE))
     } else {byvars <- NULL; chivars <- NULL}
 
@@ -757,7 +757,7 @@ process_r_dataframe <- function(config) {
   # Comparison with CHI standards (if needed) ----
   if(isTRUE(config$data_params$check_chi)){
     # Get all gold standard CHI varnames and groups
-    chi_std <- unique(rads.data::misc_chi_byvars[, list(varname, group, chi = 1L)])
+    chi_std <- unique(apde.chi.tools::chi_standard_varnames[, list(varname, group, chi = 1L)])
 
     # Identify all categorical chi variables that are in the data.frame/data.table
     categorical_cols <- setdiff(names(dt), c(config$time_var, numeric_cols, date_cols))
@@ -830,7 +830,7 @@ process_rads_data <- function(config) {
   }
 
   if(isTRUE(config$data_params$check_chi)){
-    byvars <- unique(rads.data::misc_chi_byvars$varname)
+    byvars <- unique(apde.chi.tools::chi_standard_varnames$varname)
     chivars <- c(grep('^chi_', possiblecols, value = TRUE))
   } else {byvars <- NULL; chivars <- NULL}
 
@@ -882,7 +882,7 @@ process_sql_server <- function(config) {
   }
 
   if(isTRUE(config$data_params$check_chi)){
-    byvars <- unique(rads.data::misc_chi_byvars$varname)
+    byvars <- unique(apde.chi.tools::chi_standard_varnames$varname)
     chivars <- c(grep('^chi_', possiblecols, value = TRUE))
   } else {byvars <- NULL; chivars <- NULL}
 
@@ -943,7 +943,7 @@ process_sql_server <- function(config) {
     # Get all gold standard CHI varnames and groups
     # use unique(...) because some varname group combos duplicated because birth
     # data has different `cat` than other data
-    chi_std <- unique(rads.data::misc_chi_byvars[, list(varname, group, chi = 1L)])
+    chi_std <- unique(apde.chi.tools::chi_standard_varnames[, list(varname, group, chi = 1L)])
 
     # Limit chi_std to categorical variables in frequency table
     chi_std <- chi_std[varname %in% unique(categorical_freq$varname)]
@@ -982,7 +982,7 @@ process_sql_server <- function(config) {
 
 # Helper functions in R code ----
 ## comp_2_chi_std() ----
-#' Compare data to CHI standards in rads.data::misc_chi_byvars
+#' Compare data to CHI standards in apde.chi.tools::chi_standard_varnames
 #'
 #' `used by process_sql_server()` & 'process_r_dataframe()'
 #'
@@ -1004,7 +1004,7 @@ comp_2_chi_std <- function(myCHIcomparison, time_var){
 
   if (nrow(only_chi) > 0){
     message("\U0001f626\U0001f47f\U0001F92C\u26A0\ufe0f \n",
-            "The following varname and group combinations exist in the rads.data::misc_chi_byvars \n",
+            "The following varname and group combinations exist in the apde.chi.tools::chi_standard_varnames \n",
             "standards but are missing from your dataset. Please ensure your dataset complies with\n",
             "the CHI standard.\n\n",
             paste(formatted_table, collapse = "\n"), '\n')
@@ -1019,13 +1019,13 @@ comp_2_chi_std <- function(myCHIcomparison, time_var){
                                    align = c('r', 'l', 'l'))
   if (nrow(only_your_data) > 0){
     message("\U0001f626\U0001f47f\U0001F92C\u26A0\ufe0f \nThe following varname & group combinations in your table are not valid\n",
-            "when compared to rads.data::misc_chi_byvars:\n\n",
+            "when compared to apde.chi.tools::chi_standard_varnames:\n\n",
             paste(formatted_table2, collapse = "\n"), '\n')
   }
 
   # Give message of success if there are no problems ----
   if (nrow(only_your_data) == 0 && nrow(only_chi) == 0){
-    message("\U0001f973\U0001f389\nAll of the CHI variables found in your dataset are formatted according to the standards in rads.data::misc_chi_byvars!\n")
+    message("\U0001f973\U0001f389\nAll of the CHI variables found in your dataset are formatted according to the standards in apde.chi.tools::chi_standard_varnames!\n")
   }
 
 }
@@ -1477,7 +1477,7 @@ generate_categorical_query <- function(config) {
 #' @return A list containing formatted and combined results that consists of:
 #' - `missingness`: Structured summary of the proportion of missing data per variable and time point
 #' - `values`: Combined table with the frequency of categorical variables and simple statistics for numeric and date / datetime variables
-#' - `chi_standards`: Comparison of CHI (Community Health Indicator) variables values with those expected based on `rads.data::misc_chi_byvars`
+#' - `chi_standards`: Comparison of CHI (Community Health Indicator) variables values with those expected based on `apde.chi.tools::chi_standard_varnames`
 #'
 #' @examples
 #' \dontrun{

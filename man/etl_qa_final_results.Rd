@@ -16,7 +16,7 @@ A list containing formatted and combined results that consists of:
 \itemize{
 \item \code{missingness}: Structured summary of the proportion of missing data per variable and time point
 \item \code{values}: Combined table with the frequency of categorical variables and simple statistics for numeric and date / datetime variables
-\item \code{chi_standards}: Comparison of CHI (Community Health Indicator) variables values with those expected based on \code{rads.data::misc_chi_byvars}
+\item \code{chi_standards}: Comparison of CHI (Community Health Indicator) variables values with those expected based on \code{apde.chi.tools::chi_standard_varnames}
 }
 }
 \description{
