@@ -770,7 +770,7 @@ process_r_dataframe <- function(config) {
     your_data <- data.table::rbindlist(lapply(chi_dtvars, function(col) {
       unique(dt[, list(varname = col,
                     group = as.character(.SD[[col]])),
-                by = chi_year,
+                by = get(config$time_var),
                 .SDcols = col
       ][, your_data := 1L])
     }))
@@ -781,13 +781,13 @@ process_r_dataframe <- function(config) {
     chi_std_comparison <- merge(your_data,
                                 chi_std,
                                 by = c('varname', 'group'),
-                                all = T)[, list(chi_year, varname, group, your_data, chi)]
+                                all = T)[, .SD, .SDcols = c(config$data_params$time_var, 'varname', 'group', 'your_data', 'chi')]
 
     chi_std_comparison[is.na(your_data), your_data := 0]
     chi_std_comparison[is.na(chi), chi := 0]
 
     # use summary function
-    comp_2_chi_std(chi_std_comparison)
+    comp_2_chi_std(chi_std_comparison, time_var = config$data_params$time_var)
   } else {
     chi_std_comparison = data.table::data.table() # create a data.table with zero columns and zero rows, just to have a data.table object so rest of code will work
   }
@@ -838,7 +838,7 @@ process_rads_data <- function(config) {
     unique(c(chivars,
              byvars,
              config$data_params$cols,
-             'chi_year',
+             config$data_params$time_var,
              ifelse(isTRUE(config$data_params$kingco), 'chi_geo_kc', '')
     )),
     possiblecols))
@@ -952,20 +952,22 @@ process_sql_server <- function(config) {
     categorical_freq <- categorical_freq[varname %in% unique(chi_std$varname)]
 
     # Tidy frequency table
-    categorical_freq <- categorical_freq[, list(chi_year, varname, group = value, your_data = 1L)]
+    categorical_freq <- categorical_freq[, .SD, .SDcols = c(config$data_params$time_var, 'varname', 'value')]
+    setnames(categorical_freq, 'value', 'group')
+    categorical_freq[, your_data := 1]
     categorical_freq <- categorical_freq[!is.na(group)]
 
     # Merge CHI standards onto actual data ----
     chi_std_comparison <- merge(categorical_freq,
                                 chi_std,
                                 by = c('varname', 'group'),
-                                all = T)[, list(chi_year, varname, group, your_data, chi)]
+                                all = T)[, .SD, .SDcols = c(config$data_params$time_var, 'varname', 'group', 'your_data', 'chi')]
 
     chi_std_comparison[is.na(your_data), your_data := 0]
     chi_std_comparison[is.na(chi), chi := 0]
 
     # use summary function
-    comp_2_chi_std(chi_std_comparison)
+    comp_2_chi_std(chi_std_comparison, time_var = config$data_params$time_var)
   } else {
     chi_std_comparison = data.table::data.table() # create a data.table with zero columns and zero rows, just to have a data.table object so rest of code will work
   }
@@ -988,7 +990,7 @@ process_sql_server <- function(config) {
 #' @noRd
 #'
 #'
-comp_2_chi_std <- function(myCHIcomparison){
+comp_2_chi_std <- function(myCHIcomparison, time_var){
   # Expects data.table with chi_year <integer>, varname <character>, group <character>, your_data <integer/logical>, chi <integer/logical>
   # Identify data in CHI standard table that is not in the dataset ----
   only_chi <- myCHIcomparison[your_data == 0][, list(varname, group)]
@@ -1010,7 +1012,7 @@ comp_2_chi_std <- function(myCHIcomparison){
 
   # Identify data in mydata that is not the CHI standard table ----
   only_your_data <- myCHIcomparison[chi == 0]
-  only_your_data <- only_your_data[, list(chi_year = rads::format_time(chi_year)), list(varname, group)]
+  only_your_data <- only_your_data[, list(chi_year = rads::format_time(get(time_var))), list(varname, group)]
   data.table::setorder(only_your_data, varname, group)
   formatted_table2 <- knitr::kable(only_your_data[, list(chi_year, varname, group)],
                                    format = "pipe",
