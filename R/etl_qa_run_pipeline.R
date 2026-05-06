@@ -135,7 +135,7 @@
 #'
 #' # Example with SQL Server
 #' library(DBI)
-#' myconnection <- rads::validate_hhsaw_key()
+#' myconnection <- apde.data::authenticate_hhsaw()
 #' qa.sql <- etl_qa_run_pipeline(
 #'   data_source_type = 'sql_server',
 #'   connection = myconnection,
@@ -435,7 +435,7 @@ etl_qa_run_pipeline <- function(connection = NULL,
 #'
 #' # Example with SQL Server
 #' library(DBI)
-#' myconnection <- rads::validate_hhsaw_key()
+#' myconnection <- apde.data::authenticate_hhsaw()
 #' config.sql <- etl_qa_setup_config(
 #'   data_source_type = 'sql_server',
 #'   connection = myconnection,

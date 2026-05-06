@@ -16,9 +16,9 @@ library(apde.etl)
     myOutputFolder <- tempdir()
 
   ## Create connections ----
-    myconnection <- rads::validate_hhsaw_key()
+    myconnection <- apde.data::authenticate_hhsaw()
 
-    myNEWconnection <- rads::validate_hhsaw_key()
+    myNEWconnection <- apde.data::authenticate_hhsaw()
     DBI::dbDisconnect(myNEWconnection) # disconnected DBIconnection needed to throw the error message below
 
   ## Create synthetic data & estimates for testing numeric arguments ----
