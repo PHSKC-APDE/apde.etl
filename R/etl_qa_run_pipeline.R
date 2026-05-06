@@ -187,7 +187,7 @@ etl_qa_run_pipeline <- function(connection = NULL,
   } else if (data_source_type == 'sql_server' && is.null(connection)) {
     stop("\U0001f47f\nFor 'sql_server' data_source_type, a DBIConnection object must be provided for the connection argument")
   } else if (data_source_type != 'sql_server' && !is.null(connection)) {
-    warning("\U00026A0\nThe connection argument is ignored when data_source_type != 'sql_server'")
+    warning("\u26A0\ufe0f\nThe connection argument is ignored when data_source_type != 'sql_server'")
   }
 
   ## Validate data_params ----
@@ -209,7 +209,7 @@ etl_qa_run_pipeline <- function(connection = NULL,
   if((!'cols' %in% names(data_params) || is.null(data_params$cols) ) & isFALSE(data_params$check_chi)){
     stop("\U0001f47f\nYou must specify the 'data_params$cols' argument when data_params$check_chi is FALSE or not provided.")
   } else if ((!'cols' %in% names(data_params) || is.null(data_params$cols) ) & isTRUE(data_params$check_chi)){
-    warning("\U00026A0\nYou did not specify the 'data_params$cols' argument. Since data_params$check_chi = TRUE, the code will run, \n",
+    warning("\u26A0\ufe0f\nYou did not specify the 'data_params$cols' argument. Since data_params$check_chi = TRUE, the code will run, \n",
     "however it might encounter an error if there are no CHI related variables in your data.")
   }
 
@@ -482,7 +482,7 @@ etl_qa_setup_config <- function(data_source_type,
     }
   } else {
     output_directory <- getwd()
-    warning("\U00026A0\nNo output_directory specified. Using current working directory: ", output_directory, ".")
+    warning("\u26A0\ufe0f\nNo output_directory specified. Using current working directory: ", output_directory, ".")
   }
 
   # Validate check_chi
@@ -1003,7 +1003,7 @@ comp_2_chi_std <- function(myCHIcomparison, time_var){
                                   align = c('r', 'l', 'l', 'l'))
 
   if (nrow(only_chi) > 0){
-    message("\U0001f626\U0001f47f\U0001F92C\U00026A0 \n",
+    message("\U0001f626\U0001f47f\U0001F92C\u26A0\ufe0f \n",
             "The following varname and group combinations exist in the rads.data::misc_chi_byvars \n",
             "standards but are missing from your dataset. Please ensure your dataset complies with\n",
             "the CHI standard.\n\n",
@@ -1018,7 +1018,7 @@ comp_2_chi_std <- function(myCHIcomparison, time_var){
                                    format = "pipe",
                                    align = c('r', 'l', 'l'))
   if (nrow(only_your_data) > 0){
-    message("\U0001f626\U0001f47f\U0001F92C\U00026A0 \nThe following varname & group combinations in your table are not valid\n",
+    message("\U0001f626\U0001f47f\U0001F92C\u26A0\ufe0f \nThe following varname & group combinations in your table are not valid\n",
             "when compared to rads.data::misc_chi_byvars:\n\n",
             paste(formatted_table2, collapse = "\n"), '\n')
   }
@@ -1710,7 +1710,7 @@ etl_qa_export_results <- function(qa_results, config) {
   if(nrow(mi100) > 0){
     mi100vars <- paste0(unique(mi100$varname), collapse  = ', ') # string of all 100% missing separated by comma
     mi100vars <- sub(", ([^,]*)$", " & \\1", mi100vars) # replace last comma with ampersand
-    warning("\n\U00026A0\nThe following variables are 100% missing across all time points and therefore DO NOT have value plots:\n",
+    warning("\n\u26A0\ufe0f\nThe following variables are 100% missing across all time points and therefore DO NOT have value plots:\n",
             mi100vars, immediate.=TRUE)
     mi100vars <- unique(mi100$varname) # save a clean vector of all variables with 100% missing data
   } else {mi100vars <- c() }
