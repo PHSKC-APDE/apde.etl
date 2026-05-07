@@ -1793,7 +1793,9 @@ etl_qa_export_results <- function(qa_results, config) {
 #'
 integer_year_breaks <- function(max_breaks = 10) {
   function(x) {
-    myrange <- range(x, na.rm = TRUE)
+    x <- x[is.finite(x)]
+    if(length(x) == 0) return(numeric)
+    myrange <- suppressWarnings(range(x, na.rm = TRUE))
     all_years <- seq(floor(myrange[1]), ceiling(myrange[2]), by = 1)
     if (length(all_years) <= max_breaks) {
       all_years
@@ -1974,7 +1976,7 @@ plotMISSING <- function(plot_data, time_var, mytitle) {
       ggplot2::geom_line(linewidth = 2) +
       ggplot2::facet_wrap('varname', ncol = 4) +
       ggplot2::scale_x_continuous(name = time_var,
-                                  breaks = integer_year_breaks(max_breaks = 10),
+                                  breaks = integer_year_breaks(max_breaks = 5),
                                   labels = scales::label_number(accuracy = 1, big.mark = '')) +
       ggplot2::scale_y_continuous(limits = c(0, 1), labels = scales::percent_format(accuracy = 1L)) +
       ggplot2::ylab('Percent missing') +
