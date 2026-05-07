@@ -735,8 +735,8 @@ process_r_dataframe <- function(config) {
                                max = suppressWarnings(max(value, na.rm = TRUE))),
                            by = list(get(config$time_var), varname)]
 
-    vals_date[, min := fifelse(is.infinite(min), NA, min)] # Inf created for years with no data ... annoying, so clean up and replace with NA
-    vals_date[, max := fifelse(is.infinite(max), NA, max)] # -Inf created for years with no data ... annoying, so clean up and replace with NA
+    vals_date[, min := data.table::fifelse(is.infinite(min), NA, min)] # Inf created for years with no data ... annoying, so clean up and replace with NA
+    vals_date[, max := data.table::fifelse(is.infinite(max), NA, max)] # -Inf created for years with no data ... annoying, so clean up and replace with NA
 
     data.table::setnames(vals_date, c("get"), c(config$time_var))
     vals_date[, varname := as.character(varname)]
@@ -1638,8 +1638,8 @@ etl_qa_final_results <- function(initial_qa_results, config) {
 
   # Clean all Inf, -Inf, and NaN ----
   # these are are all nonsense and should be replaced by true `NA` values so data are comparable and graph properly
-  for(col in names(values)) set(values, i=which(is.nan(values[[col]])), j=col, value=NA)
-  for(col in names(values)) set(values, i=which(is.infinite(values[[col]])), j=col, value=NA)
+  for(col in names(values)) data.table::set(values, i=which(is.nan(values[[col]])), j=col, value=NA)
+  for(col in names(values)) data.table::set(values, i=which(is.infinite(values[[col]])), j=col, value=NA)
 
   # Return results as a list ----
   return(list(
