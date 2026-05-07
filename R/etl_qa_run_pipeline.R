@@ -713,7 +713,8 @@ process_r_dataframe <- function(config) {
     vals_continuous <- vals_continuous[, list(mean = as.double(mean(value, na.rm = TRUE)), # calculate stats
                                            median = as.double(stats::median(value, na.rm = TRUE)),
                                            min = as.double(min(value, na.rm = TRUE)),
-                                           max = as.double(max(value, na.rm = TRUE))), by = list(get(config$time_var), varname)]
+                                           max = as.double(max(value, na.rm = TRUE))),
+                                       by = list(get(config$time_var), varname)]
 
     data.table::setnames(vals_continuous,  c("get"), c(config$time_var))
     vals_continuous[, varname := as.character(varname)]} else {
@@ -730,7 +731,8 @@ process_r_dataframe <- function(config) {
 
     vals_date <- vals_date[, list(median = stats::median(value, na.rm = TRUE),
                                min = min(value, na.rm = TRUE),
-                               max = max(value, na.rm = TRUE)), by = list(get(config$time_var), varname)]
+                               max = max(value, na.rm = TRUE)),
+                           by = list(get(config$time_var), varname)]
 
     data.table::setnames(vals_date, c("get"), c(config$time_var))
     vals_date[, varname := as.character(varname)]
@@ -774,6 +776,8 @@ process_r_dataframe <- function(config) {
                 .SDcols = col
       ][, your_data := 1L])
     }))
+
+    data.table::setnames(your_data, 'get', config$time_var) # ascribe the actual name of the time_var!
 
     your_data <- your_data[!is.na(group)]
 
