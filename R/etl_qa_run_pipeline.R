@@ -1051,7 +1051,7 @@ comp_2_chi_std <- function(myCHIcomparison, time_var){
 keep_top_8 <- function(categorical_freq, config){
   if(nrow(categorical_freq) > 0){
     vals_frequent <- data.table::copy(categorical_freq)
-    vals_frequent <- vals_frequent[!is.na(value), rank := data.table::frankv(-count, ties.method = "random"), by = c(config$time_var, 'varname')]
+    vals_frequent <- vals_frequent[!is.na(value), rank := data.table::frankv(-count, ties.method = "dense"), by = c(config$time_var, 'varname')]
     vals_frequent[is.na(value), rank := 0] # give NA rank of 0 to ensure that it is always selected along with top 8 most frequent
     vals_frequent <- vals_frequent[rank %in% 0:8]
     categorical_freq <- merge(categorical_freq,
