@@ -730,8 +730,12 @@ process_r_dataframe <- function(config) {
     vals_date <- data.table::melt(dt, id.vars = c(config$time_var), measure.vars = date_cols, variable.name = 'varname') # melt dt wide to long format
 
     vals_date <- vals_date[, list(median = stats::median(value, na.rm = TRUE),
-                               min = min(value, na.rm = TRUE),
-                               max = max(value, na.rm = TRUE)), by = list(get(config$time_var), varname)]
+                               min = suppressWarnings(min(value, na.rm = TRUE)),
+                               max = suppressWarnings(max(value, na.rm = TRUE))),
+                           by = list(get(config$time_var), varname)]
+
+    vals_date[, min := fifelse(is.infinite(min), NA, min)] # Inf created for years with no data ... annoying, so clean up and replace with NA
+    vals_date[, max := fifelse(is.infinite(max), NA, max)] # -Inf created for years with no data ... annoying, so clean up and replace with NA
 
     data.table::setnames(vals_date, c("get"), c(config$time_var))
     vals_date[, varname := as.character(varname)]
@@ -1914,10 +1918,10 @@ plotCONTINUOUS <- function(var_data, time_var, mytitle) {
 #'
 plotDATE <- function(var_data, time_var, mytitle) {
   # Drop rows for years without data because some questions asked alternating years
-  var_data <- var_data[!is.na(median_date)]
+  var_data <- var_data[!is.na(median_date) & !is.na(min_date) & !is.na(max_date)]
 
   # Typical case where there is more than 1 row of data
-  if (nrow(var_data[!is.na(median_date)]) > 1){
+  if (nrow(var_data) > 1){
     plot <-   ggplot2::ggplot(var_data[!is.na(median_date)]) +
       ggplot2::geom_line(ggplot2::aes(x = time_period, y = min_date, color = "Minimum", linetype = "Minimum"), linewidth = 2) +
       ggplot2::geom_line(ggplot2::aes(x = time_period, y = median_date, color = "Median", linetype = "Median"), linewidth = 1.5) +
@@ -1929,7 +1933,7 @@ plotDATE <- function(var_data, time_var, mytitle) {
                             values = c("Minimum" = "solid",
                                        "Median" = "solid",
                                        "Maximum" = "solid"))
-  } else if (nrow(var_data[!is.na(median_date)]) == 1){
+  } else if (nrow(var_data) == 1){
     plot <-   ggplot2::ggplot(var_data[!is.na(median_date)]) +
       ggplot2::geom_point(ggplot2::aes(x = time_period, y = min_date, color = "Minimum"), size = 3) +
       ggplot2::geom_point(ggplot2::aes(x = time_period, y = median_date, color = "Median"), size = 3) +
@@ -1945,7 +1949,7 @@ plotDATE <- function(var_data, time_var, mytitle) {
                                 breaks = integer_year_breaks(max_breaks = 10),
                                 labels = scales::label_number(accuracy = 1, big.mark = '')) +
     ggplot2::scale_y_date(date_labels = "%Y-%m-%d",
-                 limits = c(min(var_data$min_date, na.rm = TRUE), max(var_data$max_date, na.rm = TRUE)),
+                          limits = c(min(var_data$min_date, na.rm = TRUE), max(var_data$max_date, na.rm = TRUE)),
                  # date_breaks = "5 year" # commented out because never know the scale of dates being assessed
     ) +
     ggplot2::labs(title = mytitle, subtitle = paste0('', var_data$varname[1]), x = time_var, y = var_data$varname[1]) +
