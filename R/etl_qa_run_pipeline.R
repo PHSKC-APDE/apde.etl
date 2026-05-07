@@ -1636,6 +1636,11 @@ etl_qa_final_results <- function(initial_qa_results, config) {
   values <- values[, keepvars, with = FALSE]
   data.table::setorderv(values, intersect(c('varname', 'value', 'time_period'), names(values)))
 
+  # Clean all Inf, -Inf, and NaN ----
+  # these are are all nonsense and should be replaced by true `NA` values so data are comparable and graph properly
+  for(col in names(values)) set(values, i=which(is.nan(values[[col]])), j=col, value=NA)
+  for(col in names(values)) set(values, i=which(is.infinite(values[[col]])), j=col, value=NA)
+
   # Return results as a list ----
   return(list(
     missingness = data.table::setkey(missing_data, NULL),
