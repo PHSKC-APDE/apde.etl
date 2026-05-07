@@ -1949,7 +1949,7 @@ plotDATE <- function(var_data, time_var, mytitle) {
                                 breaks = integer_year_breaks(max_breaks = 10),
                                 labels = scales::label_number(accuracy = 1, big.mark = '')) +
     ggplot2::scale_y_date(date_labels = "%Y-%m-%d",
-                 limits = c(min(var_data$min_date), max(var_data$max_date)),
+                 limits = c(min(var_data$min_date, na.rm = TRUE), max(var_data$max_date, na.rm = TRUE)),
                  # date_breaks = "5 year" # commented out because never know the scale of dates being assessed
     ) +
     ggplot2::labs(title = mytitle, subtitle = paste0('', var_data$varname[1]), x = time_var, y = var_data$varname[1]) +
