@@ -1709,6 +1709,7 @@ etl_qa_export_results <- function(qa_results, config) {
   # Extract information from config ----
   output_directory <- config$output_directory
   time_var <- config$time_var
+  time_range <- config$time_range
 
   # Identify the data source ----
   if(config$data_source_type == 'sql_server'){
@@ -1741,7 +1742,7 @@ etl_qa_export_results <- function(qa_results, config) {
                       format(Sys.Date(), "%B %d, %Y"))
 
     if (plot_type == "missing") {
-      plots <- plotMISSING(plot_data, time_var, mytitle)
+      plots <- plotMISSING(plot_data, time_var, mytitle, time_range)
       for (plot in plots) {
         print(plot)
       }
@@ -1750,11 +1751,11 @@ etl_qa_export_results <- function(qa_results, config) {
         # message('Plotting ', var)
         var_data <- plot_data[varname == var]
         if (all(var_data$vartype == 'Categorical')) {
-          myplot <- plotCATEGORICAL(var_data, time_var, mytitle)
+          myplot <- plotCATEGORICAL(var_data, time_var, mytitle, time_range)
         } else if (all(var_data$vartype == 'Continuous')) {
-          myplot <- plotCONTINUOUS(var_data, time_var, mytitle)
+          myplot <- plotCONTINUOUS(var_data, time_var, mytitle, time_range)
         } else if (all(var_data$vartype == 'Date')) {
-          myplot <- plotDATE(var_data, time_var, mytitle)
+          myplot <- plotDATE(var_data, time_var, mytitle, time_range)
         }
         print(myplot)
       }
@@ -1826,7 +1827,7 @@ integer_year_breaks <- function(max_breaks = 10) {
 #' @noRd
 #'
 #'
-plotCATEGORICAL <- function(var_data, time_var, mytitle) {
+plotCATEGORICAL <- function(var_data, time_var, mytitle, time_range) {
   # Drop rows for years without data because some questions asked alternating years
   var_data <- var_data[, if(any(proportion != 0)) .SD, by = time_period]
 
@@ -1840,7 +1841,8 @@ plotCATEGORICAL <- function(var_data, time_var, mytitle) {
     ggplot2::geom_point(size = 2.5, show.legend = FALSE) +
     ggplot2::scale_x_continuous(name = time_var,
                                 breaks = integer_year_breaks(max_breaks = 10),
-                                labels = scales::label_number(accuracy = 1, big.mark = '')) +
+                                labels = scales::label_number(accuracy = 1, big.mark = ''),
+                                limits = time_range) +
     ggplot2::scale_y_continuous(limits = c(0, 1)) +
     ggplot2::scale_color_manual(values = c(scales::hue_pal()(length(unique(stats::na.omit(var_data$value)))), "black"),
                        na.value = "black") +
@@ -1867,7 +1869,7 @@ plotCATEGORICAL <- function(var_data, time_var, mytitle) {
 #' @keywords internal
 #' @noRd
 #'
-plotCONTINUOUS <- function(var_data, time_var, mytitle) {
+plotCONTINUOUS <- function(var_data, time_var, mytitle, time_range) {
   # Drop rows for years without data because some questions asked alternating years
     var_data <- var_data[!is.na(mean)]
 
@@ -1905,7 +1907,8 @@ plotCONTINUOUS <- function(var_data, time_var, mytitle) {
 
     ggplot2::scale_x_continuous(name = time_var,
                                 breaks = integer_year_breaks(max_breaks = 10),
-                                labels = scales::label_number(accuracy = 1, big.mark = '')) +
+                                labels = scales::label_number(accuracy = 1, big.mark = ''),
+                                limits = time_range) +
     ggplot2::labs(title = mytitle, subtitle = paste0('', var_data$varname[1]), x = time_var, y = var_data$varname[1]) +
     ggplot2::theme_bw() +
     ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5),
@@ -1924,10 +1927,12 @@ plotCONTINUOUS <- function(var_data, time_var, mytitle) {
 #' @noRd
 #'
 #'
-plotDATE <- function(var_data, time_var, mytitle) {
+plotDATE <- function(var_data, time_var, mytitle, time_range) {
   # Drop rows for years without data because some questions asked alternating years
   var_data <- var_data[!is.na(median_date) & !is.na(min_date) & !is.na(max_date)]
-
+  # if(!is(time_range, 'Date')){
+  #   time_range = as.Date(c(paste0('01-01-', time_range[1]), paste0('12-31-',time_range[2])), format = '%m-%d-%Y')
+  # }
   # Typical case where there is more than 1 row of data
   if (nrow(var_data) > 1){
     plot <-   ggplot2::ggplot(var_data[!is.na(median_date)]) +
@@ -1955,7 +1960,8 @@ plotDATE <- function(var_data, time_var, mytitle) {
                                   "Maximum" = "#33a02c")) +
     ggplot2::scale_x_continuous(name = time_var,
                                 breaks = integer_year_breaks(max_breaks = 10),
-                                labels = scales::label_number(accuracy = 1, big.mark = '')) +
+                                labels = scales::label_number(accuracy = 1, big.mark = ''),
+                                limits = time_range) +
     ggplot2::scale_y_date(date_labels = "%Y-%m-%d",
                           limits = c(min(var_data$min_date, na.rm = TRUE), max(var_data$max_date, na.rm = TRUE)),
                  # date_breaks = "5 year" # commented out because never know the scale of dates being assessed
@@ -1978,7 +1984,7 @@ plotDATE <- function(var_data, time_var, mytitle) {
 #' @noRd
 #'
 #'
-plotMISSING <- function(plot_data, time_var, mytitle) {
+plotMISSING <- function(plot_data, time_var, mytitle, time_range) {
   plot_data[, vargroup := ceiling(as.numeric(factor(varname)) / 16)]
   plots <- list()
   for (ii in unique(plot_data$vargroup)) {
@@ -1989,7 +1995,8 @@ plotMISSING <- function(plot_data, time_var, mytitle) {
       ggplot2::facet_wrap('varname', ncol = 4) +
       ggplot2::scale_x_continuous(name = time_var,
                                   breaks = integer_year_breaks(max_breaks = 5),
-                                  labels = scales::label_number(accuracy = 1, big.mark = '')) +
+                                  labels = scales::label_number(accuracy = 1, big.mark = ''),
+                                  limits = time_range) +
       ggplot2::scale_y_continuous(limits = c(0, 1), labels = scales::percent_format(accuracy = 1L)) +
       ggplot2::ylab('Percent missing') +
       ggplot2::ggtitle(mytitle) +
