@@ -32,9 +32,9 @@ This is an \emph{internal function} accessible only by use of \code{:::}, for ex
 
 # Step 1: generate a config object
 myconfig <- etl_qa_setup_config(
-  data_source_type = 'rads',
+  data_source_type = 'apde.data',
   data_params = list(
-    function_name = 'get_data_birth',
+    function_name = 'birth',
     time_var = 'chi_year',
     time_range = c(2021, 2022),
     cols = c('chi_age', 'race4', 'birth_weight_grams', 'birthplace_city',
