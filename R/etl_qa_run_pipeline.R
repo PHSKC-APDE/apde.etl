@@ -12,7 +12,7 @@
 #' `apde` package.
 #'
 #' @param data_source_type Character string specifying the type of data source.
-#' Must be one of `'r_dataframe'`, `'sql_server'`, or `'rads'`.
+#' Must be one of `'r_dataframe'`, `'sql_server'`, or `'apde.data'`.
 #' @param connection A DBIConnection object. *Required only when
 #' `data_source_type = 'sql_server'`*
 #' @param data_params List of data related parameters specific to the data source. Not all
@@ -37,15 +37,16 @@
 #'   `data_source_type = 'r_dataframe'`*.
 #'
 #' - `function_name`: Character string specifying the relevant
-#'   `rads::get_data_xxx` function, e.g., `function_name = 'get_data_birth'`.
-#'   *Required only when `data_source_type = 'rads'`*
+#'   `apde.data::xxx` function, e.g., `function_name = 'birth'`, which
+#'   fetches birth data.
+#'   *Required only when `data_source_type = 'apde.data'`*
 #'
 #' - `kingco`: Logical vector of length 1. Identifies whether you want
 #'   limit the data to King County. *Required only when
-#'   `data_source_type = 'rads'`*. Default is `kingco = TRUE`
+#'   `data_source_type = 'apde.data'`*. Default is `kingco = TRUE`
 #'
 #' - `version`: Character string specifying either `'final'` or
-#'   `'stage'`. *Required only when `data_source_type = 'rads'`*.
+#'   `'stage'`. *Required only when `data_source_type = 'apde.data'`*.
 #'   Default is `version = 'stage'`
 #'
 #' - `schema_table`: The name of the schema and table to be accessed
@@ -76,7 +77,7 @@
 #' - `exported`: File paths for exported tables and plots
 #'
 #' @details
-#' The function provides identical output whether using `rads`, providing a
+#' The function provides identical output whether using `apde.data`, providing a
 #' data.table that is in R's memory, or processing data directly on MS SQL Server.
 #' The key is to correctly set up the arguments. Please refer to the examples
 #' below for models that you should follow.
@@ -93,11 +94,11 @@
 #' \dontrun{
 #' # The following three examples generate identical output:
 #'
-#' # Example with RADS
-#' qa.rads <- etl_qa_run_pipeline(
-#'   data_source_type = 'rads',
+#' # Example with apde.data
+#' qa.apde.data <- etl_qa_run_pipeline(
+#'   data_source_type = 'apde.data',
 #'   data_params = list(
-#'     function_name = 'get_data_birth',
+#'     function_name = 'birth',
 #'     time_var = 'chi_year',
 #'     time_range = c(2021, 2022),
 #'     cols = c('chi_age', 'race4', 'birth_weight_grams', 'birthplace_city',
@@ -111,13 +112,13 @@
 #'
 #'
 #' # Example with R dataframe
-#' birth_data <- rads::get_data_birth(year = c(2021:2022),
-#'                                    kingco = F,
-#'                                    cols = c('chi_age', 'race4',
-#'                                    'birth_weight_grams', 'birthplace_city',
-#'                                    'num_prev_cesarean', 'chi_year',
-#'                                    'mother_date_of_birth'),
-#'                                    version = 'final')
+#' birth_data <- apde.data::birth(year = c(2021:2022),
+#'                                kingco = F,
+#'                                cols = c('chi_age', 'race4',
+#'                                'birth_weight_grams', 'birthplace_city',
+#'                                'num_prev_cesarean', 'chi_year',
+#'                                'mother_date_of_birth'),
+#'                                version = 'final')
 #'
 #' qa.df <- etl_qa_run_pipeline(
 #'   data_source_type = 'r_dataframe',
@@ -151,8 +152,8 @@
 #' )
 #'
 #' # Confirmation that the results are identical
-#' all.equal(qa.rads$final, qa.df$final)
-#' all.equal(qa.rads$final, qa.sql$final)
+#' all.equal(qa.apde.data$final, qa.df$final)
+#' all.equal(qa.apde.data$final, qa.sql$final)
 #'
 #' }
 #'
@@ -175,8 +176,8 @@ etl_qa_run_pipeline <- function(connection = NULL,
 
   # Validate arguments ----
   ## Validate data_source_type ----
-  if (!data_source_type %in% c('r_dataframe', 'sql_server', 'rads')) {
-    stop("\U0001f47f\ndata_source_type must be one of 'r_dataframe', 'sql_server', or 'rads'")
+  if (!data_source_type %in% c('r_dataframe', 'sql_server', 'apde.data')) {
+    stop("\U0001f47f\ndata_source_type must be one of 'r_dataframe', 'sql_server', or 'apde.data'")
   }
 
   ## Validate connection ----
@@ -235,16 +236,16 @@ etl_qa_run_pipeline <- function(connection = NULL,
   }
 
   ### data_params$function_name ----
-  if (data_source_type == 'rads' && !'function_name' %in% names(data_params)) {
-    stop("\U0001f47f\nFor 'rads' data_source_type, data_params must include a 'function_name'. Options are limited to:\n",
-         sub(', ([^,]*)$', ' & \\1', paste0(suppressWarnings(grep('get_data_', ls(getNamespace("rads")), value = T)), collapse = ', ')), ".")
-  } else if (data_source_type == 'rads' && !data_params$function_name %in% suppressWarnings(grep('get_data_', ls(getNamespace("rads")), value = T))){
+  if (data_source_type == 'apde.data' && !'function_name' %in% names(data_params)) {
+    stop("\U0001f47f\nWhen `data_source_type = 'apde.data'`, data_params must include a 'function_name'. Options are limited to:\n",
+         paste0(ls(getNamespace("apde.data"))[!grepl('_', ls(getNamespace("apde.data")))], collapse = ', '), ".")
+  } else if (data_source_type == 'apde.data' && !data_params$function_name %in% ls(getNamespace('apde.data'))){
     stop("\U0001f47f\nThe data_params$function_name you provided is invalid. Available options are limited to:\n",
-         sub(', ([^,]*)$', ' & \\1', paste0(suppressWarnings(grep('get_data_', ls(getNamespace("rads")), value = T)), collapse = ', ')), ".")
+         paste0(ls(getNamespace("apde.data"))[!grepl('_', ls(getNamespace("apde.data")))], collapse = ', '), ".")
   }
 
   ### data_params$kingco ----
-    if (data_source_type == 'rads') {
+    if (data_source_type == 'apde.data') {
       if(!'kingco'%in% names(data_params)){
         message("data_params$kingco not provided. Defaulting to TRUE.")
         data_params$kingco <- TRUE
@@ -254,7 +255,7 @@ etl_qa_run_pipeline <- function(connection = NULL,
     }
 
   ### data_params$version ----
-    if (data_source_type == 'rads') {
+    if (data_source_type == 'apde.data') {
       if (!'version' %in% names(data_params)) {
         message("data_params$version not provided. Defaulting to 'stage'.")
         data_params$version <- 'stage'
@@ -393,11 +394,11 @@ etl_qa_run_pipeline <- function(connection = NULL,
 #' # The following examples generate config objects which can be passed to
 #' # etl_qa_initial_results()
 #'
-#' # Example with RADS
-#' config.rads <- etl_qa_setup_config(
-#'   data_source_type = 'rads',
+#' # Example with apde.data
+#' config.apde.data <- etl_qa_setup_config(
+#'   data_source_type = 'apde.data',
 #'   data_params = list(
-#'     function_name = 'get_data_birth',
+#'     function_name = 'birth',
 #'     time_var = 'chi_year',
 #'     time_range = c(2021, 2022),
 #'     cols = c('chi_age', 'race4', 'birth_weight_grams', 'birthplace_city',
@@ -408,11 +409,11 @@ etl_qa_run_pipeline <- function(connection = NULL,
 #'   ),
 #'   output_directory = 'C:/temp/'
 #' )
-#' class(config.rads)
+#' class(config.apde.data)
 #'
 #'
 #' # Example with R data.frame
-#' birth_data <- rads::get_data_birth(year = c(2021:2022),
+#' birth_data <- apde.data::birth(year = c(2021:2022),
 #'                              kingco = F,
 #'                              cols = c('chi_age', 'race4', 'birth_weight_grams',
 #'                              'birthplace_city', 'num_prev_cesarean',
@@ -471,8 +472,8 @@ etl_qa_setup_config <- function(data_source_type,
   }
 
   # Validate input parameters
-  if (!data_source_type %in% c('r_dataframe', 'sql_server', 'rads')) {
-    stop("\U0001f47f\ndata_source_type must be 'r_dataframe', 'sql_server', or 'rads'")
+  if (!data_source_type %in% c('r_dataframe', 'sql_server', 'apde.data')) {
+    stop("\U0001f47f\ndata_source_type must be 'r_dataframe', 'sql_server', or 'apde.data'")
   }
 
   # Validate output_directory
@@ -526,14 +527,14 @@ etl_qa_setup_config <- function(data_source_type,
       stop("\U0001f47f\n'schema_table' should be in the format 'schemaName.tableName', with a period between the schema and table.")
     }
     config$process_location <- 'sql'
-  } else if (data_source_type == 'rads') {
+  } else if (data_source_type == 'apde.data') {
     if (!'function_name' %in% names(data_params)) {
-      stop("\U0001f47f\nFor 'rads' type, data_params must include a 'function_name'")
+      stop("\U0001f47f\nFor 'apde.data' type, data_params must include a 'function_name'")
     }
-    if (!grepl('^get_data_', data_params$function_name)){
-      stop("\U0001f47f\nFor 'rads' data_source_type, data_params must include a 'function_name' that begins with 'get_data_', e.g., 'get_data_birth'")
+    if (!data_params$function_name %in% ls(getNamespace("apde.data"))[!grepl('_', ls(getNamespace("apde.data")))]){
+      stop("\U0001f47f\nWhen `data_source_type = 'apde.data'`, data_params must include a valid 'function_name' (e.g., 'birth', 'chars', 'brfss', etc.)")
     }
-    # Add 'kingco' and 'version' only for 'rads' type
+    # Add 'kingco' and 'version' only for 'apde.data' type
     config$data_params$kingco <- data_params$kingco %||% TRUE
     config$data_params$version <- data_params$version %||% 'stage'
 
@@ -591,9 +592,9 @@ etl_qa_setup_config <- function(data_source_type,
 #'
 #' # Step 1: generate a config object
 #' myconfig <- etl_qa_setup_config(
-#'   data_source_type = 'rads',
+#'   data_source_type = 'apde.data',
 #'   data_params = list(
-#'     function_name = 'get_data_birth',
+#'     function_name = 'birth',
 #'     time_var = 'chi_year',
 #'     time_range = c(2021, 2022),
 #'     cols = c('chi_age', 'race4', 'birth_weight_grams', 'birthplace_city',
@@ -625,8 +626,8 @@ etl_qa_initial_results <- function(config) {
   data_list <- NULL
   if (config$data_source_type == 'r_dataframe') {
     data_list <- process_r_dataframe(config)
-  } else if (config$data_source_type == 'rads') {
-    data_list <- process_rads_data(config)
+  } else if (config$data_source_type == 'apde.data') {
+    data_list <- process_apde_data(config)
   } else if (config$data_source_type == 'sql_server') {
     data_list <- process_sql_server(config)
   } else {
@@ -661,7 +662,7 @@ process_r_dataframe <- function(config) {
                get(config$time_var) <= config$time_range[2]]
   }
 
-  # Identify CHI variables (if needed and only for data.frame since rads data filtered already) ----
+  # Identify CHI variables (if needed and only for data.frame since apde.data data filtered already) ----
   if (config$data_source_type == 'r_dataframe') {
     possiblecols <- names(dt)
 
@@ -730,9 +731,12 @@ process_r_dataframe <- function(config) {
     vals_date <- data.table::melt(dt, id.vars = c(config$time_var), measure.vars = date_cols, variable.name = 'varname') # melt dt wide to long format
 
     vals_date <- vals_date[, list(median = stats::median(value, na.rm = TRUE),
-                               min = min(value, na.rm = TRUE),
-                               max = max(value, na.rm = TRUE)),
+                               min = suppressWarnings(min(value, na.rm = TRUE)),
+                               max = suppressWarnings(max(value, na.rm = TRUE))),
                            by = list(get(config$time_var), varname)]
+
+    vals_date[, min := data.table::fifelse(is.infinite(min), NA, min)] # Inf created for years with no data ... annoying, so clean up and replace with NA
+    vals_date[, max := data.table::fifelse(is.infinite(max), NA, max)] # -Inf created for years with no data ... annoying, so clean up and replace with NA
 
     data.table::setnames(vals_date, c("get"), c(config$time_var))
     vals_date[, varname := as.character(varname)]
@@ -804,8 +808,8 @@ process_r_dataframe <- function(config) {
        chi_standards = chi_std_comparison)
 }
 
-# process_rads_data() - Function to process rads::get_data_xxx() ----
-#' Process RADS data for ETL QA
+# process_apde_data() - Function to process apde.data::xxx() ----
+#' Process apde.data data for ETL QA
 #'
 #' Used by `etl_qa_initial_results()`
 #'
@@ -813,7 +817,7 @@ process_r_dataframe <- function(config) {
 #' @noRd
 #'
 #'
-process_rads_data <- function(config) {
+process_apde_data <- function(config) {
   # Validate config$data_params$kingco
   config$data_params$kingco <- config$data_params$kingco %||% TRUE
   if (!is.logical(config$data_params$kingco) || length(config$data_params$kingco) != 1 || is.na(config$data_params$kingco)) {
@@ -827,7 +831,7 @@ process_rads_data <- function(config) {
   }
 
   # Identify CHI variables (if needed) ----
-  possiblecols <- rads::quiet(apde.data::list_data_columns(gsub('get_data_', '', config$data_params$function_name))[]$var.names)
+  possiblecols <- rads::quiet(apde.data::list_data_columns(config$data_params$function_name)[]$var.names)
 
 
   if(!config$data_params$time_var %in% possiblecols){
@@ -848,8 +852,8 @@ process_rads_data <- function(config) {
     )),
     possiblecols))
 
-  # Use the appropriate get_data_xxx function ----
-  data_func <- utils::getFromNamespace(config$data_params$function_name, "rads") # dynamically get the get_data_xxx function without loading all of rads
+  # Use the appropriate apde.data::xxx function ----
+  data_func <- utils::getFromNamespace(config$data_params$function_name, 'apde.data') # dynamically get the function without loading all of apde.data
 
   dt <- data_func(year = config$time_range[1]:config$time_range[2],
                   cols = unique(c(config$time_var, config$data_params$cols)),
@@ -1047,7 +1051,7 @@ comp_2_chi_std <- function(myCHIcomparison, time_var){
 keep_top_8 <- function(categorical_freq, config){
   if(nrow(categorical_freq) > 0){
     vals_frequent <- data.table::copy(categorical_freq)
-    vals_frequent <- vals_frequent[!is.na(value), rank := data.table::frankv(-count, ties.method = "random"), by = c(config$time_var, 'varname')]
+    vals_frequent <- vals_frequent[!is.na(value), rank := data.table::frankv(-count, ties.method = "dense"), by = c(config$time_var, 'varname')]
     vals_frequent[is.na(value), rank := 0] # give NA rank of 0 to ensure that it is always selected along with top 8 most frequent
     vals_frequent <- vals_frequent[rank %in% 0:8]
     categorical_freq <- merge(categorical_freq,
@@ -1489,9 +1493,9 @@ generate_categorical_query <- function(config) {
 #'
 #' # Step 1: generate a config object
 #' myconfig <- etl_qa_setup_config(
-#'   data_source_type = 'rads',
+#'   data_source_type = 'apde.data',
 #'   data_params = list(
-#'     function_name = 'get_data_birth',
+#'     function_name = 'birth',
 #'     time_var = 'chi_year',
 #'     time_range = c(2021, 2022),
 #'     cols = c('chi_age', 'race4', 'birth_weight_grams', 'birthplace_city',
@@ -1632,6 +1636,11 @@ etl_qa_final_results <- function(initial_qa_results, config) {
   values <- values[, keepvars, with = FALSE]
   data.table::setorderv(values, intersect(c('varname', 'value', 'time_period'), names(values)))
 
+  # Clean all Inf, -Inf, and NaN ----
+  # these are are all nonsense and should be replaced by true `NA` values so data are comparable and graph properly
+  for(col in names(values)) data.table::set(values, i=which(is.nan(values[[col]])), j=col, value=NA)
+  for(col in names(values)) data.table::set(values, i=which(is.infinite(values[[col]])), j=col, value=NA)
+
   # Return results as a list ----
   return(list(
     missingness = data.table::setkey(missing_data, NULL),
@@ -1667,9 +1676,9 @@ etl_qa_final_results <- function(initial_qa_results, config) {
 #'
 #' # Step 1: generate a config object
 #' myconfig <- etl_qa_setup_config(
-#'   data_source_type = 'rads',
+#'   data_source_type = 'apde.data',
 #'   data_params = list(
-#'     function_name = 'get_data_birth',
+#'     function_name = 'birth',
 #'     time_var = 'chi_year',
 #'     time_range = c(2021, 2022),
 #'     cols = c('chi_age', 'race4', 'birth_weight_grams', 'birthplace_city',
@@ -1700,12 +1709,13 @@ etl_qa_export_results <- function(qa_results, config) {
   # Extract information from config ----
   output_directory <- config$output_directory
   time_var <- config$time_var
+  time_range <- config$time_range
 
   # Identify the data source ----
   if(config$data_source_type == 'sql_server'){
     datasource = config$data_params$schema_table
-  } else if (config$data_source_type == 'rads') {
-    datasource = paste0('rads_', config$data_params$function_name, '_(', config$data_params$version, ')')
+  } else if (config$data_source_type == 'apde.data') {
+    datasource = paste0('apde.data_', config$data_params$function_name, '_(', config$data_params$version, ')')
   } else {
     datasource = config$data_params$data_source
   }
@@ -1732,7 +1742,7 @@ etl_qa_export_results <- function(qa_results, config) {
                       format(Sys.Date(), "%B %d, %Y"))
 
     if (plot_type == "missing") {
-      plots <- plotMISSING(plot_data, time_var, mytitle)
+      plots <- plotMISSING(plot_data, time_var, mytitle, time_range)
       for (plot in plots) {
         print(plot)
       }
@@ -1741,11 +1751,11 @@ etl_qa_export_results <- function(qa_results, config) {
         # message('Plotting ', var)
         var_data <- plot_data[varname == var]
         if (all(var_data$vartype == 'Categorical')) {
-          myplot <- plotCATEGORICAL(var_data, time_var, mytitle)
+          myplot <- plotCATEGORICAL(var_data, time_var, mytitle, time_range)
         } else if (all(var_data$vartype == 'Continuous')) {
-          myplot <- plotCONTINUOUS(var_data, time_var, mytitle)
+          myplot <- plotCONTINUOUS(var_data, time_var, mytitle, time_range)
         } else if (all(var_data$vartype == 'Date')) {
-          myplot <- plotDATE(var_data, time_var, mytitle)
+          myplot <- plotDATE(var_data, time_var, mytitle, time_range)
         }
         print(myplot)
       }
@@ -1786,6 +1796,28 @@ etl_qa_export_results <- function(qa_results, config) {
 }
 
 # Helper functions for plotting ----
+## integer_year_breaks() ----
+#' Generate integer-only axis breaks for year-based x-axes
+#'
+#' Used by `plotCATEGORICAL()`, `plotCONTINUOUS()`, `plotDATE()`, and `plotMISSING()`
+#'
+#' @keywords internal
+#' @noRd
+#'
+integer_year_breaks <- function(max_breaks = 10) {
+  function(x) {
+    x <- x[is.finite(x)]
+    if(length(x) == 0) return(numeric)
+    myrange <- suppressWarnings(range(x, na.rm = TRUE))
+    all_years <- seq(floor(myrange[1]), ceiling(myrange[2]), by = 1)
+    if (length(all_years) <= max_breaks) {
+      all_years
+    } else {
+      unique(round(scales::breaks_pretty(n = max_breaks)(x)))
+    }
+  }
+}
+
 ## plotCATEGORICAL() ----
 #' Plot categorical data
 #'
@@ -1795,7 +1827,7 @@ etl_qa_export_results <- function(qa_results, config) {
 #' @noRd
 #'
 #'
-plotCATEGORICAL <- function(var_data, time_var, mytitle) {
+plotCATEGORICAL <- function(var_data, time_var, mytitle, time_range) {
   # Drop rows for years without data because some questions asked alternating years
   var_data <- var_data[, if(any(proportion != 0)) .SD, by = time_period]
 
@@ -1808,8 +1840,9 @@ plotCATEGORICAL <- function(var_data, time_var, mytitle) {
     ggplot2::geom_line(ggplot2::aes(linewidth = ifelse(is.na(value), 1.5, 2))) +
     ggplot2::geom_point(size = 2.5, show.legend = FALSE) +
     ggplot2::scale_x_continuous(name = time_var,
-                                breaks = scales::breaks_pretty(n = 10),
-                                labels = scales::label_number(accuracy = 1, big.mark = '')) +
+                                breaks = integer_year_breaks(max_breaks = 10),
+                                labels = scales::label_number(accuracy = 1, big.mark = ''),
+                                limits = time_range) +
     ggplot2::scale_y_continuous(limits = c(0, 1)) +
     ggplot2::scale_color_manual(values = c(scales::hue_pal()(length(unique(stats::na.omit(var_data$value)))), "black"),
                        na.value = "black") +
@@ -1836,7 +1869,7 @@ plotCATEGORICAL <- function(var_data, time_var, mytitle) {
 #' @keywords internal
 #' @noRd
 #'
-plotCONTINUOUS <- function(var_data, time_var, mytitle) {
+plotCONTINUOUS <- function(var_data, time_var, mytitle, time_range) {
   # Drop rows for years without data because some questions asked alternating years
     var_data <- var_data[!is.na(mean)]
 
@@ -1873,8 +1906,9 @@ plotCONTINUOUS <- function(var_data, time_var, mytitle) {
                                   "Maximum" = "#33a02c")) +
 
     ggplot2::scale_x_continuous(name = time_var,
-                                breaks = scales::breaks_pretty(n = 10),
-                                labels = scales::label_number(accuracy = 1, big.mark = '')) +
+                                breaks = integer_year_breaks(max_breaks = 10),
+                                labels = scales::label_number(accuracy = 1, big.mark = ''),
+                                limits = time_range) +
     ggplot2::labs(title = mytitle, subtitle = paste0('', var_data$varname[1]), x = time_var, y = var_data$varname[1]) +
     ggplot2::theme_bw() +
     ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5),
@@ -1893,12 +1927,14 @@ plotCONTINUOUS <- function(var_data, time_var, mytitle) {
 #' @noRd
 #'
 #'
-plotDATE <- function(var_data, time_var, mytitle) {
+plotDATE <- function(var_data, time_var, mytitle, time_range) {
   # Drop rows for years without data because some questions asked alternating years
-  var_data <- var_data[!is.na(median_date)]
-
+  var_data <- var_data[!is.na(median_date) & !is.na(min_date) & !is.na(max_date)]
+  # if(!is(time_range, 'Date')){
+  #   time_range = as.Date(c(paste0('01-01-', time_range[1]), paste0('12-31-',time_range[2])), format = '%m-%d-%Y')
+  # }
   # Typical case where there is more than 1 row of data
-  if (nrow(var_data[!is.na(median_date)]) > 1){
+  if (nrow(var_data) > 1){
     plot <-   ggplot2::ggplot(var_data[!is.na(median_date)]) +
       ggplot2::geom_line(ggplot2::aes(x = time_period, y = min_date, color = "Minimum", linetype = "Minimum"), linewidth = 2) +
       ggplot2::geom_line(ggplot2::aes(x = time_period, y = median_date, color = "Median", linetype = "Median"), linewidth = 1.5) +
@@ -1910,7 +1946,7 @@ plotDATE <- function(var_data, time_var, mytitle) {
                             values = c("Minimum" = "solid",
                                        "Median" = "solid",
                                        "Maximum" = "solid"))
-  } else if (nrow(var_data[!is.na(median_date)]) == 1){
+  } else if (nrow(var_data) == 1){
     plot <-   ggplot2::ggplot(var_data[!is.na(median_date)]) +
       ggplot2::geom_point(ggplot2::aes(x = time_period, y = min_date, color = "Minimum"), size = 3) +
       ggplot2::geom_point(ggplot2::aes(x = time_period, y = median_date, color = "Median"), size = 3) +
@@ -1923,10 +1959,11 @@ plotDATE <- function(var_data, time_var, mytitle) {
                                   "Median" = "#b2df8a",
                                   "Maximum" = "#33a02c")) +
     ggplot2::scale_x_continuous(name = time_var,
-                                breaks = scales::breaks_pretty(n = 10),
-                                labels = scales::label_number(accuracy = 1, big.mark = '')) +
+                                breaks = integer_year_breaks(max_breaks = 10),
+                                labels = scales::label_number(accuracy = 1, big.mark = ''),
+                                limits = time_range) +
     ggplot2::scale_y_date(date_labels = "%Y-%m-%d",
-                 limits = c(min(var_data$min_date), max(var_data$max_date)),
+                          limits = c(min(var_data$min_date, na.rm = TRUE), max(var_data$max_date, na.rm = TRUE)),
                  # date_breaks = "5 year" # commented out because never know the scale of dates being assessed
     ) +
     ggplot2::labs(title = mytitle, subtitle = paste0('', var_data$varname[1]), x = time_var, y = var_data$varname[1]) +
@@ -1947,7 +1984,7 @@ plotDATE <- function(var_data, time_var, mytitle) {
 #' @noRd
 #'
 #'
-plotMISSING <- function(plot_data, time_var, mytitle) {
+plotMISSING <- function(plot_data, time_var, mytitle, time_range) {
   plot_data[, vargroup := ceiling(as.numeric(factor(varname)) / 16)]
   plots <- list()
   for (ii in unique(plot_data$vargroup)) {
@@ -1957,8 +1994,9 @@ plotMISSING <- function(plot_data, time_var, mytitle) {
       ggplot2::geom_line(linewidth = 2) +
       ggplot2::facet_wrap('varname', ncol = 4) +
       ggplot2::scale_x_continuous(name = time_var,
-                                  breaks = scales::breaks_pretty(n = 8),
-                                  labels = scales::label_number(accuracy = 1, big.mark = '')) +
+                                  breaks = integer_year_breaks(max_breaks = 5),
+                                  labels = scales::label_number(accuracy = 1, big.mark = ''),
+                                  limits = time_range) +
       ggplot2::scale_y_continuous(limits = c(0, 1), labels = scales::percent_format(accuracy = 1L)) +
       ggplot2::ylab('Percent missing') +
       ggplot2::ggtitle(mytitle) +

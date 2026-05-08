@@ -21,7 +21,7 @@ etl_qa_run_pipeline(
 \code{data_source_type = 'sql_server'}}}
 
 \item{data_source_type}{Character string specifying the type of data source.
-Must be one of \code{'r_dataframe'}, \code{'sql_server'}, or \code{'rads'}.}
+Must be one of \code{'r_dataframe'}, \code{'sql_server'}, or \code{'apde.data'}.}
 
 \item{data_params}{List of data related parameters specific to the data source. Not all
 parameters are needed for all data sources. Please review the examples for details.
@@ -40,13 +40,14 @@ e.g., \code{time_var = 'chi_year'}
 with this function, e.g., \code{data = myDataTable}. \emph{Required only when
 \code{data_source_type = 'r_dataframe'}}.
 \item \code{function_name}: Character string specifying the relevant
-\code{rads::get_data_xxx} function, e.g., \code{function_name = 'get_data_birth'}.
-\emph{Required only when \code{data_source_type = 'rads'}}
+\code{apde.data::xxx} function, e.g., \code{function_name = 'birth'}, which
+fetches birth data.
+\emph{Required only when \code{data_source_type = 'apde.data'}}
 \item \code{kingco}: Logical vector of length 1. Identifies whether you want
 limit the data to King County. \emph{Required only when
-\code{data_source_type = 'rads'}}. Default is \code{kingco = TRUE}
+\code{data_source_type = 'apde.data'}}. Default is \code{kingco = TRUE}
 \item \code{version}: Character string specifying either \code{'final'} or
-\code{'stage'}. \emph{Required only when \code{data_source_type = 'rads'}}.
+\code{'stage'}. \emph{Required only when \code{data_source_type = 'apde.data'}}.
 Default is \code{version = 'stage'}
 \item \code{schema_table}: The name of the schema and table to be accessed
 within the SQL Server \code{connection}. Must be in the form
@@ -91,7 +92,7 @@ It analyzes data for missingness, variable distributions, and optionally
 checks compliance with CHI (Community Health Indicators) standards.
 }
 \details{
-The function provides identical output whether using \code{rads}, providing a
+The function provides identical output whether using \code{apde.data}, providing a
 data.table that is in R's memory, or processing data directly on MS SQL Server.
 The key is to correctly set up the arguments. Please refer to the examples
 below for models that you should follow.
@@ -104,11 +105,11 @@ This function replaces the deprecated \code{etl_qa_run_pipeline} function from t
 \dontrun{
 # The following three examples generate identical output:
 
-# Example with RADS
-qa.rads <- etl_qa_run_pipeline(
-  data_source_type = 'rads',
+# Example with apde.data
+qa.apde.data <- etl_qa_run_pipeline(
+  data_source_type = 'apde.data',
   data_params = list(
-    function_name = 'get_data_birth',
+    function_name = 'birth',
     time_var = 'chi_year',
     time_range = c(2021, 2022),
     cols = c('chi_age', 'race4', 'birth_weight_grams', 'birthplace_city',
@@ -122,13 +123,13 @@ qa.rads <- etl_qa_run_pipeline(
 
 
 # Example with R dataframe
-birth_data <- rads::get_data_birth(year = c(2021:2022),
-                                   kingco = F,
-                                   cols = c('chi_age', 'race4',
-                                   'birth_weight_grams', 'birthplace_city',
-                                   'num_prev_cesarean', 'chi_year',
-                                   'mother_date_of_birth'),
-                                   version = 'final')
+birth_data <- apde.data::birth(year = c(2021:2022),
+                               kingco = F,
+                               cols = c('chi_age', 'race4',
+                               'birth_weight_grams', 'birthplace_city',
+                               'num_prev_cesarean', 'chi_year',
+                               'mother_date_of_birth'),
+                               version = 'final')
 
 qa.df <- etl_qa_run_pipeline(
   data_source_type = 'r_dataframe',
@@ -162,8 +163,8 @@ qa.sql <- etl_qa_run_pipeline(
 )
 
 # Confirmation that the results are identical
-all.equal(qa.rads$final, qa.df$final)
-all.equal(qa.rads$final, qa.sql$final)
+all.equal(qa.apde.data$final, qa.df$final)
+all.equal(qa.apde.data$final, qa.sql$final)
 
 }
 
