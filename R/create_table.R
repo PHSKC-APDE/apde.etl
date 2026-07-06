@@ -96,6 +96,8 @@
 #' This pointer should already be established in the SQL database.
 #' @param ext_schema Name of the external data schema (if not using YAML input).
 #' @param ext_object_name Name of the external data table (if not using YAML input).
+#' @param with Text used to add at the end of the CREATE TABLE command. This allows
+#' custom distribution with hashes set during table creation.
 #' @param overall Create single table instead of a table for each calendar year.
 #' Mutually exclusive with **ind_yr** option. Default is TRUE.
 #' @param ind_yr Create multiple tables with the same core structure, one for each
@@ -141,6 +143,7 @@ create_table <- function(conn,
                          ext_data_source = NULL,
                          ext_schema = NULL,
                          ext_object_name = NULL,
+                         with = NULL,
                          overall = T,
                          ind_yr = F,
                          years = NULL,
@@ -259,6 +262,9 @@ create_table <- function(conn,
     external_text <- glue::glue_sql(" WITH (DATA_SOURCE = {DBI::SQL(ext_data_source)},
                                     SCHEMA_NAME = {ext_schema},
                                     OBJECT_NAME = {ext_object_name})", .con = conn)
+  } else if (!is.null(with)) {
+    external_setup <- DBI::SQL("")
+    external_text <- DBI::SQL(glue::glue(" WITH ({with}) "))
   } else {
     external_setup <- DBI::SQL("")
     external_text <- DBI::SQL("")

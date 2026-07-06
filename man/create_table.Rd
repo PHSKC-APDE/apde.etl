@@ -18,6 +18,7 @@ create_table(
   ext_data_source = NULL,
   ext_schema = NULL,
   ext_object_name = NULL,
+  with = NULL,
   overall = T,
   ind_yr = F,
   years = NULL,
@@ -67,6 +68,9 @@ This pointer should already be established in the SQL database.}
 \item{ext_schema}{Name of the external data schema (if not using YAML input).}
 
 \item{ext_object_name}{Name of the external data table (if not using YAML input).}
+
+\item{with}{Text used to add at the end of the CREATE TABLE command. This allows
+custom distribution with hashes set during table creation.}
 
 \item{overall}{Create single table instead of a table for each calendar year.
 Mutually exclusive with \strong{ind_yr} option. Default is TRUE.}

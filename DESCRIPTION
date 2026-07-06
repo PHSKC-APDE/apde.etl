@@ -1,6 +1,6 @@
 Package: apde.etl
 Title: APDE Tools for ETL (Extract, Transform, & Load) Procesess
-Version: 2.0.0
+Version: 2.1.0
 Authors@R: 
     person("Danny", "Colombara", , "dcolombara@kingcounty.gov", role = c("aut", "cre"))
 Description: Provides tools for ETL and informatics processes.

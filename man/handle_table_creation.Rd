@@ -4,7 +4,7 @@
 \alias{handle_table_creation}
 \title{HELPER: Handle table creation and overwrite logic}
 \usage{
-handle_table_creation(conn, to_schema, to_table, overwrite, table_config)
+handle_table_creation(conn, to_schema, to_table, overwrite, table_config, with)
 }
 \arguments{
 \item{conn}{Database connection}
@@ -16,6 +16,8 @@ handle_table_creation(conn, to_schema, to_table, overwrite, table_config)
 \item{overwrite}{Whether to overwrite existing table}
 
 \item{table_config}{Configuration object}
+
+\item{with}{Text for setting distribution options}
 }
 \description{
 HELPER: Handle table creation and overwrite logic
