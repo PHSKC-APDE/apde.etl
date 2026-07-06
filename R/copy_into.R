@@ -37,6 +37,8 @@
 #' @param row_term Character or string used to separate rows in the input file
 #' @param first_row Row number where data begins in the input file, excluding headers (default: `2`)
 #' @param overwrite Logical; if TRUE, truncate the table before creating it (default: `TRUE`)
+#' @param with Text used to add at the end of the CREATE TABLE command. This allows
+#' custom distribution with hashes set during table creation.
 #' @param rodbc Logical; if TRUE, use RODBC package to avoid encoding errors with secret keys (default: `FALSE`)
 #' @param rodbc_dsn DSN name for the RODBC connection (default: `"int_edw_16"`)
 #'
@@ -66,6 +68,7 @@ copy_into <- function(conn,
                       row_term = NULL,
                       first_row = 2,
                       overwrite = TRUE,
+                      with,
                       rodbc = FALSE,
                       rodbc_dsn = "int_edw_16") {
 
@@ -100,7 +103,7 @@ copy_into <- function(conn,
   auth_sql <- create_auth_sql(rodbc, identity, secret, conn)
 
   # TABLE CREATION ----
-  handle_table_creation(conn, to_schema, to_table, overwrite, table_config)
+  handle_table_creation(conn, to_schema, to_table, overwrite, table_config, with)
   message(glue::glue("Creating [{to_schema}].[{to_table}] table"))
 
   # EXECUTE COPY INTO ----
@@ -264,7 +267,8 @@ create_auth_sql <- function(rodbc, identity, secret, conn) {
 #' @param to_table Target table
 #' @param overwrite Whether to overwrite existing table
 #' @param table_config Configuration object
-handle_table_creation <- function(conn, to_schema, to_table, overwrite, table_config) {
+#' @param with Text for setting distribution options
+handle_table_creation <- function(conn, to_schema, to_table, overwrite, table_config, with) {
   table_id <- DBI::Id(schema = to_schema, table = to_table)
 
   if (overwrite) {
@@ -275,11 +279,16 @@ handle_table_creation <- function(conn, to_schema, to_table, overwrite, table_co
   }
 
   if (!DBI::dbExistsTable(conn, table_id)) {
+    if(!is.null(with)) {
+      with_text <- DBI::SQL(glue::glue(" WITH ({with}) "))
+    } else {
+      with_text <- DBI::SQL("")
+    }
     create_table_sql <- glue::glue_sql(
       "CREATE TABLE {`to_schema`}.{`to_table`} (
           {DBI::SQL(glue::glue_collapse(glue::glue_sql('{`names(table_config$vars)`} {DBI::SQL(table_config$vars)}',
                                            .con = conn), sep = ', \n'))}
-        )",
+        ) {with_text}",
       .con = conn
     )
     DBI::dbExecute(conn, create_table_sql)
