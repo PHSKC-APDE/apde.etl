@@ -24,6 +24,7 @@ copy_into(
   row_term = NULL,
   first_row = 2,
   overwrite = TRUE,
+  with = NULL,
   rodbc = FALSE,
   rodbc_dsn = "int_edw_16"
 )
@@ -66,6 +67,9 @@ copy_into(
 \item{first_row}{Row number where data begins in the input file, excluding headers (default: \code{2})}
 
 \item{overwrite}{Logical; if TRUE, truncate the table before creating it (default: \code{TRUE})}
+
+\item{with}{Text used to add at the end of the CREATE TABLE command. This allows
+custom distribution with hashes set during table creation.}
 
 \item{rodbc}{Logical; if TRUE, use RODBC package to avoid encoding errors with secret keys (default: \code{FALSE})}
 
