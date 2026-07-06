@@ -68,7 +68,7 @@ copy_into <- function(conn,
                       row_term = NULL,
                       first_row = 2,
                       overwrite = TRUE,
-                      with,
+                      with = NULL,
                       rodbc = FALSE,
                       rodbc_dsn = "int_edw_16") {
 
