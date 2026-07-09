@@ -105,7 +105,7 @@ external_table_check <- function(conn,
   result <- all.equal(source_cols, external_cols)
 
   # If everything matches, end function and return TRUE
-  if(result == TRUE) {
+  if(!is.character(result) && result == TRUE) {
     message(glue::glue("Source Table [{schema}].[{table}] Matches External Table [{schema_ext}].[{table_ext}]"))
     return(TRUE)
   }
