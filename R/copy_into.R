@@ -96,8 +96,32 @@ copy_into <- function(conn,
   db_name <- get_config_param(db_name, table_config, server, "db_name")
 
   # PREPARE SQL COMPONENTS ----
+  ## If the file_type is parquet, field and row properties are not necessary.
+  ## Also, COPY INTO will handle the compression settings automatically, so that property is not necessary.
+  if(file_type == "parquet") {
+    fieldrow_sql <- DBI::SQL("")
+    compression <- "none"
+  } else {
+    fieldrow_sql <- DBI::SQL(glue::glue_sql(
+      "FIELDTERMINATOR = {field_term},
+     FIELDQUOTE = {field_quote},
+     ROWTERMINATOR = {row_term},
+    FIRSTROW = {first_row},",
+      .con = conn))
+  }
+
+  ## vars list is set here
+  vars_sql <- DBI::SQL(glue::glue_sql(
+    "({`names(table_config$vars)`*})",
+    .con = conn))
+
+  ## If compression is set to "none", the property is not necessary.
   if (compression == "none") {
-    compression <- DBI::SQL("")
+    compression_sql <- DBI::SQL("")
+  } else {
+    compression_sql <- DBI::SQL(glue::glue_sql(
+      "COMPRESSION = {compression},",
+      .con = conn))
   }
 
   auth_sql <- create_auth_sql(rodbc, identity, secret, conn)
@@ -109,17 +133,14 @@ copy_into <- function(conn,
   # EXECUTE COPY INTO ----
   load_sql <- glue::glue_sql(
     "COPY INTO {`to_schema`}.{`to_table`}
-    ({`names(table_config$vars)`*})
+  {vars_sql}
     FROM {dl_path}
     WITH (
-      FILE_TYPE = {file_type},
       {auth_sql}
       MAXERRORS = {max_errors},
-      COMPRESSION = {compression},
-      FIELDQUOTE = {field_quote},
-      FIELDTERMINATOR = {field_term},
-      ROWTERMINATOR = {row_term},
-      FIRSTROW = {first_row}
+      {compression_sql}
+      {fieldrow_sql}
+      FILE_TYPE = {file_type}
     );",
     .con = conn
   )
