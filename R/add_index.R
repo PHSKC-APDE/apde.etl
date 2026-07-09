@@ -66,6 +66,8 @@
 #' @param index_name Name of the index to be added (if not using YAML input).
 #' @param index_vars Vector of variables to index on if using a clustered ('cl') index (if not using YAML input).
 #' Should take the format `c("a", "b", "c")`.
+#' @param index_ts This will append a timestamp in the format of YYYYMMDD-HHMMSS to
+#' the `index_name`, guaranteeing uniqueness. Default is `TRUE`.
 #' @param drop_index Remove any existing clustered or clustered column store indices.
 #' Default is `TRUE`.
 #' @param test_schema Add index to a temporary/development schema when testing out table creation.
@@ -92,6 +94,7 @@ add_index <- function(conn,
                       index_type = NULL,
                       index_name = NULL,
                       index_vars = NULL,
+                      index_ts = T,
                       drop_index = T,
                       test_schema = NULL) {
 
@@ -152,6 +155,11 @@ add_index <- function(conn,
     } else {
       stop("index_name must be specified or present in the config file.")
     }
+  }
+
+  ## index_name + index_ts ----
+  if (index_ts == T) {
+    index_name <- paste0(index_name, "_", format(Sys.time(), format = "%Y%m%d-%H%M%S"))
   }
 
   ## index_type ----
