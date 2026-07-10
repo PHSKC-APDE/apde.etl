@@ -126,6 +126,17 @@ copy_into_test <- function(conn,
 
   auth_sql <- create_auth_sql_test(rodbc, identity, secret, conn)
 
+  if(identity == "Managed Identity") {
+    auth_sql <- glue::glue_sql("CREDENTIAL = (IDENTITY = {identity}),", .con = conn)
+  } else if(rodbc && (!is.null(identity) || !is.null(secret))) {
+    auth_sql <- glue::glue_sql("CREDENTIAL = (IDENTITY = {identity}, SECRET = {secret}),", .con = conn)
+  } else if(!is.null(secret) && identity == "Storage Account Key") {
+    auth_sql <- glue::glue_sql("CREDENTIAL = (IDENTITY = {identity}, SECRET = {secret}),", .con = conn)
+  } else {
+    auth_sql <- DBI::SQL("")
+  }
+
+
   # TABLE CREATION ----
   handle_table_creation(conn, to_schema, to_table, overwrite, table_config, with)
   message(glue::glue("Creating [{to_schema}].[{to_table}] table"))
@@ -275,7 +286,7 @@ get_config_param <- function(direct_value, table_config, server, param_name) {
 #' @param secret Authentication secret
 #' @param conn Database connection
 #' @return SQL fragment for authentication
-create_auth_sql_test <- function(rodbc, identity, secret, conn) {
+create_auth_sql <- function(rodbc, identity, secret, conn) {
   if(identity == "Managed Identity") {
     return(glue::glue_sql("CREDENTIAL = (IDENTITY = {identity}),", .con = conn))
   } else if(rodbc && (!is.null(identity) || !is.null(secret))) {
