@@ -101,16 +101,32 @@ generate_yaml <- function(mydt, outfile = NULL, datasource = NULL, schema = NULL
 
   ## Set up ----
   # identify column type
-  temp.vartype <- data.table(varname = names(sapply(mydt, class)), vartype = sapply(mydt, function(x) paste(class(x), collapse = ',')))
+  temp.vartype <- data.table(varname = names(sapply(mydt, class)),
+                             vartype = sapply(mydt, function(x) paste(class(x), collapse = ',')))
 
   # identify if it is a binary
-  temp.binary <- data.table(varname = names(sapply(mydt,function(x) { all(stats::na.omit(x) %in% 0:1) })), binary = sapply(mydt,function(x) { all(stats::na.omit(x) %in% 0:1) }))
+  temp.binary <- data.table(varname = names(sapply(mydt,function(x) { all(stats::na.omit(x) %in% 0:1) })),
+                            binary = sapply(mydt,function(x) { all(stats::na.omit(x) %in% 0:1) }))
 
   # merge binary indicator to the column types
   mydict <- merge(temp.vartype, temp.binary, by = "varname")
 
   # identify vartype == binary
-  mydict[vartype %in% c("numeric", "integer") & binary == TRUE, vartype := "binary"]
+  mydict[vartype == "integer" & binary == TRUE, vartype := "binary"]
+
+  numeric_binary_cols <- mydict[
+    vartype == "numeric" & varname %in% temp.binary[binary == TRUE, varname],
+    varname
+  ]
+
+  if (length(numeric_binary_cols) > 0) {
+    message(
+      "Numeric 0/1 columns were not coded as BIT: ",
+      paste(numeric_binary_cols, collapse = ", "),
+      ". Convert them to integer or logical if BIT is desired."
+    )
+  }
+
   mydict[, binary := NULL]
 
   # ensure consistent ordering
