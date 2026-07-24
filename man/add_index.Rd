@@ -15,6 +15,7 @@ add_index(
   index_type = NULL,
   index_name = NULL,
   index_vars = NULL,
+  index_ts = T,
   drop_index = T,
   test_schema = NULL
 )
@@ -55,6 +56,9 @@ fields are named, the assumption is a clustered (CL) index.}
 
 \item{index_vars}{Vector of variables to index on if using a clustered ('cl') index (if not using YAML input).
 Should take the format \code{c("a", "b", "c")}.}
+
+\item{index_ts}{This will append a timestamp in the format of YYYYMMDD-HHMMSS to
+the \code{index_name}, guaranteeing uniqueness. Default is \code{TRUE}.}
 
 \item{drop_index}{Remove any existing clustered or clustered column store indices.
 Default is \code{TRUE}.}
