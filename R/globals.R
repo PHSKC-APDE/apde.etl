@@ -11,6 +11,7 @@ utils::globalVariables(c(
   "db_claims",
   "group",
   "group",
+  "issue",
   "max_date",
   "median",
   "median_date",
