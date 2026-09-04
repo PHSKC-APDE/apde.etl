@@ -25,7 +25,7 @@
 #' with the desired TSQL datatypes for your upload. For example,
 #' `c(col1 = 'int', col2 = 'float', col3 = 'date')`
 #' @param validate_field_types Do you want to validate TSQL field types using
-#' `rads::tsql_validate_field_types`? Logical (T|F).
+#' `tsql_validate_field_types`? Logical (T|F).
 #' Default `validate_field_types = TRUE`.
 #' @param validate_upload Do you want to validate that all rows have been
 #' uploaded? Logical (T|F).
@@ -61,7 +61,7 @@
 #'
 #'  tsql_chunk_loader(
 #'    ph.data = mydt,
-#'    db_conn = rads::validate_hhsaw_key(), # connect to Azure 16
+#'    db_conn = apde.data::authenticate_hhsaw(), # connect to Azure 16
 #'    chunk_size = 3333,
 #'    schema_name = Sys.getenv("USERNAME"),
 #'    table_name = 'JustTesting',

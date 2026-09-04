@@ -56,7 +56,7 @@
 #' If the BCP command fails, the function will stop with an error message for
 #' troubleshooting.
 #'
-#' @seealso [tsql_chunk_loader][rads::tsql_chunk_loader] for a pure R alternative with
+#' @seealso [tsql_chunk_loader()] for a pure R alternative with
 #' retry logic, data type validation, and finer control. It is better suited for
 #' moderate-sized datasets.
 #'

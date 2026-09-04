@@ -1,7 +1,8 @@
-^apde\.etl\.Rproj$
-^\.Rproj\.user$
-^LICENSE\.md$
-^tests/manual$
-^quarto_docs$
-^\.positai$
 ^\.claude$
+^\.positai$
+^\.Rproj\.user$
+^apde\.etl\.Rproj$
+^data-raw$
+^LICENSE\.md$
+^quarto_docs$
+^tests/manual$

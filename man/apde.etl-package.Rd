@@ -11,5 +11,10 @@ Provides tools for ETL and informatics processes.
 \author{
 \strong{Maintainer}: Danny Colombara \email{dcolombara@kingcounty.gov}
 
+Authors:
+\itemize{
+  \item Danny Colombara \email{dcolombara@kingcounty.gov}
+}
+
 }
 \keyword{internal}

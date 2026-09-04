@@ -28,7 +28,7 @@
 #' length for character strings, i.e., `nvarchar()` and `varchar()`, is
 #' sufficient.
 #'
-#' Note that this replaces `rads::validate_yaml_data`. To use this function to
+#' To use this function to
 #' check the compatibility of field types in a yaml file with your dataset, do
 #' the following:
 #' 1) load the yaml file, e.g., `yaml <- yaml::read_yaml("X:/code/myyaml.yaml")`
