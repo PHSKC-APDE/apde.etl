@@ -30,7 +30,7 @@ Note that this function may not thoroughly evaluate if the allocated
 length for character strings, i.e., \code{nvarchar()} and \code{varchar()}, is
 sufficient.
 
-Note that this replaces \code{rads::validate_yaml_data}. To use this function to
+To use this function to
 check the compatibility of field types in a yaml file with your dataset, do
 the following:
 \enumerate{

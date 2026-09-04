@@ -4,7 +4,7 @@ utils::globalVariables(c(
   "all_proportion_one",
   "category",
   "chi",
-  "chi_year",
+  "chi_standard_varnames",
   "chi_year",
   "conn_inner",
   "count",

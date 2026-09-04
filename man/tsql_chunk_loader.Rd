@@ -39,7 +39,7 @@ with the desired TSQL datatypes for your upload. For example,
 \code{c(col1 = 'int', col2 = 'float', col3 = 'date')}}
 
 \item{validate_field_types}{Do you want to validate TSQL field types using
-\code{rads::tsql_validate_field_types}? Logical (T|F).
+\code{tsql_validate_field_types}? Logical (T|F).
 Default \code{validate_field_types = TRUE}.}
 
 \item{validate_upload}{Do you want to validate that all rows have been
@@ -83,7 +83,7 @@ Ported from the \code{rads} package. It has been migrated here in preparation fo
 
  tsql_chunk_loader(
    ph.data = mydt,
-   db_conn = rads::validate_hhsaw_key(), # connect to Azure 16
+   db_conn = apde.data::authenticate_hhsaw(), # connect to Azure 16
    chunk_size = 3333,
    schema_name = Sys.getenv("USERNAME"),
    table_name = 'JustTesting',
