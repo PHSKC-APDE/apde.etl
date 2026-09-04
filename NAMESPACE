@@ -22,14 +22,15 @@ export(tsql_chunk_loader)
 export(tsql_convert_types)
 export(tsql_validate_field_types)
 import(data.table)
-importFrom(data.table,":=")
-importFrom(data.table,':=')
-importFrom(data.table,.I)
-importFrom(data.table,.N)
-importFrom(data.table,.SD)
-importFrom(data.table,copy)
-importFrom(data.table,data.table)
-importFrom(data.table,is.data.table)
-importFrom(data.table,setDT)
+importFrom(data.table,
+  ":=",
+  .I,
+  .N,
+  .SD,
+  copy,
+  data.table,
+  is.data.table,
+  setDT
+)
 importFrom(dplyr,"%>%")
 importFrom(yaml,read_yaml)

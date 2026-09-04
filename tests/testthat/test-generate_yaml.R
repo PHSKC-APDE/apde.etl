@@ -44,7 +44,21 @@ test_that("generate_yaml correctly writes YAML file when outfile is provided", {
 })
 
 test_that("generate_yaml detects binary variables", {
+
+  # these are numeric, but not explicit integers so will get 'INT'
   dt <- data.table(x = c(0, 1, NA))
+
+  y <- generate_yaml(
+    mydt = dt,
+    schema = "sch",
+    table = "tbl",
+    datasource = "source"
+  )
+
+  expect_true(grepl("INT", y$vars$x))
+
+  # explicit integers will give 'BIT'
+  dt <- data.table(x = c(0L, 1L, NA))
 
   y <- generate_yaml(
     mydt = dt,

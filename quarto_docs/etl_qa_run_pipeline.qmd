@@ -60,7 +60,7 @@ As you can see in the figure from Figure 2c, the proportion lines can overlap an
 
 ```{r echo=FALSE, results='hide', warning=FALSE, message=FALSE}
 # Perform the calculations, but don't directly display output
-myconnection <- rads::validate_hhsaw_key()
+myconnection <- apde.data::authenticate_hhsaw()
 qaSQL <- etl_qa_run_pipeline(
   data_source_type = 'sql_server',
   connection = myconnection,
@@ -226,7 +226,7 @@ As stated above, this function can QA data in SQL Server, a local data.table/ da
 ## QA SQL Server data
 
 ```{r echo=TRUE, results='show', warning=TRUE, message=TRUE}
-myconnection <- rads::validate_hhsaw_key()
+myconnection <- apde.data::authenticate_hhsaw()
 qaSQL <- etl_qa_run_pipeline(
   data_source_type = 'sql_server',
   connection = myconnection,

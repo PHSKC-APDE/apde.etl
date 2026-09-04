@@ -116,7 +116,7 @@ This function replaces the deprecated \code{load_df_bcp_f} function from the
 
 }
 \seealso{
-\link[rads:tsql_chunk_loader]{tsql_chunk_loader} for a pure R alternative with
+\code{\link[=tsql_chunk_loader]{tsql_chunk_loader()}} for a pure R alternative with
 retry logic, data type validation, and finer control. It is better suited for
 moderate-sized datasets.
 }
