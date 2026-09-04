@@ -20,7 +20,7 @@ A version-controlled copy of data from SharePoint:
 \href{https://kc1.sharepoint.com/teams/DPH-CHI/CHIVizes/CHI-Standards-TableauReady Output.xlsx}{DPH-CHI > CHI_vizes > CHI-Standards-TableauReady Output.xlsx}.
 }
 \usage{
-data(chi_standard_varnames)
+chi_standard_varnames
 }
 \description{
 The definitive reference table for CHI cat / varname / group values.
