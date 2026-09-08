@@ -101,7 +101,6 @@
 #'
 #' @export
 #' @rdname tsql_convert_types
-#' @import data.table
 tsql_convert_types <- function(ph.data = NULL,
                                field_types = NULL,
                                validate_before = TRUE,
@@ -117,15 +116,15 @@ tsql_convert_types <- function(ph.data = NULL,
   if (is.null(ph.data)) {
     stop("\n\U1F6D1 You must specify a dataset (i.e., {ph.data} must be defined)")
   }
-  if (!is.data.table(ph.data)) {
+  if (!data.table::is.data.table(ph.data)) {
     if (is.data.frame(ph.data)) {
-      setDT(ph.data)
+      data.table::setDT(ph.data)
     } else {
       stop("\n\U1F6D1 {ph.data} must be the name of a data.frame or data.table.")
     }
   }
 
-  ph.data = copy(ph.data) # so original will not change due to set functions
+  ph.data = data.table::copy(ph.data) # so original will not change due to set functions
 
   if (is.null(field_types) || !(is.character(field_types) && !is.null(names(field_types)) && all(nzchar(names(field_types))))) {
     stop('\n\U1F6D1 {field_types} must specify a named character vector of TSQL data types.')
@@ -158,7 +157,7 @@ tsql_convert_types <- function(ph.data = NULL,
   # Match ph.data column name casing to that in field_types ----
   lower_to_field_type_map <- stats::setNames(names(field_types), tolower(names(field_types)))
   new_names <- lower_to_field_type_map[tolower(names(ph.data))] # reorder names from field_map to match column order in ph.data
-  setnames(ph.data, new_names)
+  data.table::setnames(ph.data, new_names)
 
   # IF `validate_before = TRUE` ----
   if (validate_before) {
@@ -175,7 +174,7 @@ tsql_convert_types <- function(ph.data = NULL,
       if (return_log) {
         return(list(
           data = ph.data,
-          conversion_log = data.table(
+          conversion_log = data.table::data.table(
             column = names(field_types),
             original_type = sapply(ph.data, function(x) class(x)[1]),
             target_r_type = "No conversion needed",
@@ -232,7 +231,7 @@ tsql_convert_types <- function(ph.data = NULL,
   }
 
   # Create shell conversion log ----
-  conversion_log <- data.table(
+  conversion_log <- data.table::data.table(
     column = character(),
     original_type = character(),
     target_r_type = character(),
@@ -243,7 +242,7 @@ tsql_convert_types <- function(ph.data = NULL,
 
   # Perform conversions ----
   # First, identify which columns actually need conversion
-  all_column_info <- data.table(column = names(field_types))
+  all_column_info <- data.table::data.table(column = names(field_types))
 
   all_column_info[, target_r_class := vapply(field_types, map_tsql_to_r_class, character(1))]
 
@@ -289,7 +288,7 @@ tsql_convert_types <- function(ph.data = NULL,
       }
 
       # Log the result
-      conversion_log <- rbindlist(list(conversion_log, data.table(
+      conversion_log <- data.table::rbindlist(list(conversion_log, data.table::data.table(
         column = col_name,
         original_type = orig_r_class,
         target_r_type = target_r_class,
@@ -300,7 +299,7 @@ tsql_convert_types <- function(ph.data = NULL,
 
     }, error = function(e) {
       # Log errors
-      conversion_log <<- rbindlist(list(conversion_log, data.table(
+      conversion_log <<- data.table::rbindlist(list(conversion_log, data.table::data.table(
         column = col_name,
         original_type = orig_r_class,
         target_r_type = target_r_class,
@@ -320,7 +319,7 @@ tsql_convert_types <- function(ph.data = NULL,
   if (length(columns_not_needing_conversion) > 0) {
     for (col_name in columns_not_needing_conversion) {
       col_info <- all_column_info[column == col_name]
-      conversion_log <- rbindlist(list(conversion_log, data.table(
+      conversion_log <- data.table::rbindlist(list(conversion_log, data.table::data.table(
         column = col_name,
         original_type = col_info$orig_r_class,
         target_r_type = col_info$target_r_class,

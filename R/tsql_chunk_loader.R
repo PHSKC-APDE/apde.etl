@@ -96,9 +96,9 @@ tsql_chunk_loader <- function(ph.data = NULL, # R data.frame/data.table
         if(is.null(ph.data)){
           stop("\n\U1F6D1 You must specify a dataset (i.e., {ph.data} must be defined)")
         }
-        if(!is.data.table(ph.data)){
+        if(!data.table::is.data.table(ph.data)){
           if(is.data.frame(ph.data)){
-            setDT(ph.data)
+            data.table::setDT(ph.data)
           } else {
             stop(paste0("\n\U1F6D1 {ph.data} must be the name of a data.frame or data.table."))
           }

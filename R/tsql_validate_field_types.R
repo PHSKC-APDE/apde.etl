@@ -57,7 +57,6 @@
 #'
 #' @export
 #' @rdname tsql_validate_field_types
-#' @import data.table
 
 tsql_validate_field_types <- function(ph.data = NULL,
                                       field_types = NULL) {
@@ -70,16 +69,16 @@ tsql_validate_field_types <- function(ph.data = NULL,
       if (is.null(ph.data)) {
         stop("\n\U1F6D1 You must specify a dataset (i.e., {ph.data} must be defined)")
       }
-      if (!is.data.table(ph.data)) {
+      if (!data.table::is.data.table(ph.data)) {
         if (is.data.frame(ph.data)) {
-          setDT(ph.data)
+          data.table::setDT(ph.data)
         } else {
           stop("\n\U1F6D1 {ph.data} must be the name of a data.frame or data.table.")
         }
       }
 
-      ph.data = copy(ph.data) # copy ph.data so will not change the underlying file submitted to this function via `set` functions
-      setnames(ph.data, tolower(names(ph.data))) # b/c TSQL normally case insensitive re: column names and this function is to validate data types compatability
+      ph.data = data.table::copy(ph.data) # copy ph.data so will not change the underlying file submitted to this function via `set` functions
+      data.table::setnames(ph.data, tolower(names(ph.data))) # b/c TSQL normally case insensitive re: column names and this function is to validate data types compatability
 
       if (is.null(field_types) || !(is.character(field_types) && !is.null(names(field_types)) && all(nzchar(names(field_types))))) {
         stop('\n\U1F6D1 {field_types} must specify a named character vector of TSQL data types.')
@@ -150,7 +149,7 @@ tsql_validate_field_types <- function(ph.data = NULL,
         }
 
   # Generate R types data table ----
-      RtypesDT <- data.table(
+      RtypesDT <- data.table::data.table(
         colname = tolower(names(ph.data)),
         R_type = sapply(ph.data, \(x) class(x)[1]), # keep only first class if there is more than one, e.g., c("POSIXct", "POSIXt")
         key = "colname"
@@ -167,7 +166,7 @@ tsql_validate_field_types <- function(ph.data = NULL,
       }
 
   # Generate TSQL types data table ----
-      TSQLtypesDT <- data.table(
+      TSQLtypesDT <- data.table::data.table(
         colname = tolower(names(field_types)),
         tsql_type = gsub("\\(.*$", "", tolower(field_types)), # drop off (###)
         size = sapply(field_types, extract_size),
@@ -203,7 +202,7 @@ tsql_validate_field_types <- function(ph.data = NULL,
         R_type = R_type,
         tsql_type = tsql_type,
         is_valid = is_compatible & meets_constraints,
-        issue = fcase(
+        issue = data.table::fcase(
           R_type %in% c("integer", "integer64") & tsql_type %in% c("char","varchar","nchar","nvarchar"),
           "Warning: integer stored as character (allowed, but non-standard)",
 
