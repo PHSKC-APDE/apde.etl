@@ -7,7 +7,7 @@ test_that("generate_yaml errors when mydt is not data.frame/data.table", {
 })
 
 test_that("generate_yaml warns and returns list when no outfile is given", {
-  dt <- data.table(a = 1, b = "x")
+  dt <- data.table::data.table(a = 1, b = "x")
 
   expect_message({
     y <- generate_yaml(
@@ -23,7 +23,7 @@ test_that("generate_yaml warns and returns list when no outfile is given", {
 })
 
 test_that("generate_yaml correctly writes YAML file when outfile is provided", {
-  dt <- data.table(a = 1:3, b = c("x", "y", "z"))
+  dt <- data.table::data.table(a = 1:3, b = c("x", "y", "z"))
   outfile <- tempfile(fileext = ".yaml")
 
   expect_message(
@@ -46,7 +46,7 @@ test_that("generate_yaml correctly writes YAML file when outfile is provided", {
 test_that("generate_yaml detects binary variables", {
 
   # these are numeric, but not explicit integers so will get 'INT'
-  dt <- data.table(x = c(0, 1, NA))
+  dt <- data.table::data.table(x = c(0, 1, NA))
 
   y <- generate_yaml(
     mydt = dt,
@@ -58,7 +58,7 @@ test_that("generate_yaml detects binary variables", {
   expect_true(grepl("INT", y$vars$x))
 
   # explicit integers will give 'BIT'
-  dt <- data.table(x = c(0L, 1L, NA))
+  dt <- data.table::data.table(x = c(0L, 1L, NA))
 
   y <- generate_yaml(
     mydt = dt,

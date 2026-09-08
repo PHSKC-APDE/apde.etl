@@ -17,7 +17,7 @@ names in \code{ph.data}. This is often read into memory from a *.yaml file, but
 can also be manually created.}
 }
 \description{
-\code{tsql_validate_field_types} checks whether a named vector of TSQL data
+\code{tsql_validate_field_types()} checks whether a named vector of TSQL data
 types is compatible with a given data.table that you wish to upload to
 Microsoft SQL Server. The function does not cover every possible situation!
 For example, you might want to push your R '\code{POSIXct}' column to a SQL Server

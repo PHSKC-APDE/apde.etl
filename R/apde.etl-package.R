@@ -6,6 +6,6 @@
 #' @importFrom data.table .N
 #' @importFrom data.table .SD
 #' @importFrom data.table :=
-#' @importFrom dplyr %>%
+#' @importFrom data.table %between%
 ## usethis namespace: end
 NULL

@@ -35,9 +35,6 @@
 #'
 #' @name generate_yaml
 #'
-#' @importFrom data.table data.table copy setDT is.data.table
-#' @importFrom yaml read_yaml
-#'
 #' @examples
 #'
 #' \donttest{
@@ -63,9 +60,9 @@ generate_yaml <- function(mydt, outfile = NULL, datasource = NULL, schema = NULL
   ## Error check ----
   if(is.null(mydt))stop("mydt, the name of a data.frame or data.table for which you wish to create a YAML file, must be provided.")
 
-  if(!is.data.table(mydt)){
+  if(!data.table::is.data.table(mydt)){
     if(is.data.frame(mydt)){
-      setDT(mydt)
+      data.table::setDT(mydt)
     } else {
       stop(paste0("<mydt> must be the name of a data.frame or data.table."))
     }
@@ -101,11 +98,11 @@ generate_yaml <- function(mydt, outfile = NULL, datasource = NULL, schema = NULL
 
   ## Set up ----
   # identify column type
-  temp.vartype <- data.table(varname = names(sapply(mydt, class)),
+  temp.vartype <- data.table::data.table(varname = names(sapply(mydt, class)),
                              vartype = sapply(mydt, function(x) paste(class(x), collapse = ',')))
 
   # identify if it is a binary
-  temp.binary <- data.table(varname = names(sapply(mydt,function(x) { all(stats::na.omit(x) %in% 0:1) })),
+  temp.binary <- data.table::data.table(varname = names(sapply(mydt,function(x) { all(stats::na.omit(x) %in% 0:1) })),
                             binary = sapply(mydt,function(x) { all(stats::na.omit(x) %in% 0:1) }))
 
   # merge binary indicator to the column types
@@ -131,7 +128,7 @@ generate_yaml <- function(mydt, outfile = NULL, datasource = NULL, schema = NULL
 
   # ensure consistent ordering
   mydict[, varname := factor(varname, levels = names(mydt))]
-  setorder(mydict, varname)
+  data.table::setorder(mydict, varname)
 
   # Identify standard TSQL numeric & string types ----
   # Identify all integers << tinyint, smallint, and bigint probably should not be automatically ascribed
@@ -149,7 +146,7 @@ generate_yaml <- function(mydt, outfile = NULL, datasource = NULL, schema = NULL
   }
 
   # Ascribe SQL data type names ----
-  sqlkey <- data.table(
+  sqlkey <- data.table::data.table(
     vartype = c("logical", "character", "factor", "binary", "integer", "numeric", "Date", "POSIXct,POSIXt"),
     sql = c("BIT", "NVARCHAR", "NVARCHAR", "BIT", "INT", "NUMERIC(38,5)", "DATE", "DATETIME")  # NUMERIC(38,5) ... allows for up to 38 digits of precision, with 5 of those to the right of the decimal
   )
@@ -160,17 +157,17 @@ generate_yaml <- function(mydt, outfile = NULL, datasource = NULL, schema = NULL
   mydict[, varname := factor(varname, levels = names(mydt))]
   mydict[sql == "NVARCHAR", sql := paste0(sql, "(", varlength, ")")]
   mydict[, sql := paste0("    ", varname, ": ", sql)]
-  setorder(mydict, varname) # sort in same order as the data.table
+  data.table::setorder(mydict, varname) # sort in same order as the data.table
   mydict <- mydict[, list(sql)]
 
   if(!is.null(datasource)){
-    header <- data.table(
+    header <- data.table::data.table(
       sql = c(paste0("datasource: ", datasource),
               paste0("schema: ", schema),
               paste0("table: ", table),
               "vars: "))
   } else {
-    header <- data.table(
+    header <- data.table::data.table(
       sql = c(paste0("schema: ", schema),
               paste0("table: ", table),
               "vars: "))
@@ -180,7 +177,7 @@ generate_yaml <- function(mydt, outfile = NULL, datasource = NULL, schema = NULL
   mydict <- rbind(header, mydict)
 
   # save yaml file ----
-  fwrite(x = mydict,
+  data.table::fwrite(x = mydict,
          file = outfile,
          quote = F,
          col.names=F,
