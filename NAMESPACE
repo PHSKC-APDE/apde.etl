@@ -21,16 +21,10 @@ export(table_duplicate_delete)
 export(tsql_chunk_loader)
 export(tsql_convert_types)
 export(tsql_validate_field_types)
-import(data.table)
 importFrom(data.table,
+  "%between%",
   ":=",
   .I,
   .N,
-  .SD,
-  copy,
-  data.table,
-  is.data.table,
-  setDT
+  .SD
 )
-importFrom(dplyr,"%>%")
-importFrom(yaml,read_yaml)

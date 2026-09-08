@@ -3,13 +3,13 @@ test_that("tsql_convert_types errors when ph.data missing", {
 })
 
 test_that("tsql_convert_types errors when field_types missing or unnamed", {
-  dt <- data.table(a = 1)
+  dt <- data.table::data.table(a = 1)
   expect_error(tsql_convert_types(dt, field_types = NULL))
   expect_error(tsql_convert_types(dt, field_types = c("int")))
 })
 
 test_that("tsql_convert_types renames columns to match field_types casing", {
-  dt <- data.table(A = 1, b = 2)
+  dt <- data.table::data.table(A = 1, b = 2)
 
   ft <- c(a = "int", B = "int")
 
@@ -19,7 +19,7 @@ test_that("tsql_convert_types renames columns to match field_types casing", {
 })
 
 test_that("tsql_convert_types converts safe numeric strings to integers", {
-  dt <- data.table(a = c("1", "2", "3"))
+  dt <- data.table::data.table(a = c("1", "2", "3"))
   ft <- c(a = "int")
 
   out <- tsql_convert_types(dt, ft)
@@ -28,7 +28,7 @@ test_that("tsql_convert_types converts safe numeric strings to integers", {
 })
 
 test_that("tsql_convert_types avoids unsafe conversions", {
-  dt <- data.table(a = c("1", "2", "x"))
+  dt <- data.table::data.table(a = c("1", "2", "x"))
   ft <- c(a = "int")
 
   result <- tsql_convert_types(dt, ft, return_log = TRUE)
@@ -39,7 +39,7 @@ test_that("tsql_convert_types avoids unsafe conversions", {
 })
 
 test_that("tsql_convert_types returns conversion log when requested", {
-  dt <- data.table(a = c("1", "2", "3"))
+  dt <- data.table::data.table(a = c("1", "2", "3"))
   ft <- c(a = "int")
 
   result <- tsql_convert_types(dt, ft, return_log = TRUE)
