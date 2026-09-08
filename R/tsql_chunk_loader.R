@@ -2,12 +2,12 @@
 #' Loads large data sets to Microsoft SQL Server (TSQL) in 'chunks'
 #'
 #' @description
-#' \code{tsql_chunk_loader} divides a data.frame/data.table into smaller tables
+#' `tsql_chunk_loader()` divides a data.frame/data.table into smaller tables
 #' so it can be easily loaded into SQL. Experience has shown that loading large
 #' tables in 'chunks' is less likely to cause errors. It is not needed for small
 #' tables which load quickly. For **extremely large** datasets, you will likely
-#' want to use the \href{https://learn.microsoft.com/en-us/sql/tools/bcp-utility?}{BCP
-#' (Bulk Copy Program)}, which has been implemented in \code{\link[apde.etl]{load_df_bcp}}.
+#' want to use the [BCP (Bulk Copy Program)](https://learn.microsoft.com/en-us/sql/tools/bcp-utility?),
+#' which has been implemented in [load_df_bcp()].
 #'
 #' @note Ported from the `rads` package. It has been migrated here in preparation for release of
 #' `rads` version 2.0.0.
@@ -45,7 +45,7 @@
 #' `validate_field_types = TRUE` is ignored if the `field_types` argument is not
 #' provided.
 #'
-#' @seealso \code{\link[apde.etl]{load_df_bcp}} for a faster BCP-based approach
+#' @seealso [load_df_bcp()] for a faster BCP-based approach
 #' recommended for very large datasets where speed is critical.
 #'
 #' @name tsql_chunk_loader

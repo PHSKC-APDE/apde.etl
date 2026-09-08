@@ -3,7 +3,7 @@
 #' data.table
 #'
 #' @description
-#' \code{tsql_validate_field_types} checks whether a named vector of TSQL data
+#' `tsql_validate_field_types()` checks whether a named vector of TSQL data
 #' types is compatible with a given data.table that you wish to upload to
 #' Microsoft SQL Server. The function does not cover every possible situation!
 #' For example, you might want to push your R '`POSIXct`' column to a SQL Server
