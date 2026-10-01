@@ -1,0 +1,44 @@
+server: hhsaw
+prod: TRUE
+interactive_auth: FALSE
+schema: logging
+pipeline_table: etl_pipeline
+pipeline_vars:
+    pipeline_id: UNIQUEIDENTIFIER
+    pipeline_datasource: VARCHAR(32)
+    pipeline_name: VARCHAR(255)
+    pipeline_medallion: VARCHAR(32)
+    pipeline_desc: VARCHAR(MAX)
+    pipeline_owner: VARCHAR(255)
+    pipeline_status: VARCHAR(32)
+    created_dt: DATETIME
+    modified_dt: DATETIME
+pipeline_step_table: etl_pipeline_step
+pipeline_step_vars:
+    pipeline_step_id: UNIQUEIDENTIFIER
+    pipeline_id: UNIQUEIDENTIFIER
+    pipeline_step_name: VARCHAR(255)
+    pipeline_step_order: SMALLINT
+    pipeline_step_desc: VARCHAR(MAX)
+    substeps: JSON
+    created_dt: DATETIME
+    modified_dt: DATETIME
+log_table: etl_run_log
+log_vars:
+    etl_id: UNIQUEIDENTIFIER
+    pipeline_id: UNIQUEIDENTIFIER
+    etl_trigger: VARCHAR(255)
+    etl_var: JSON
+    etl_status: VARCHAR(32)
+    etl_start_dt: DATETIME
+    etl_end_dt: DATETIME
+log_step_table: etl_run_log_step
+log_step_vars:
+    etl_step_id: UNIQUEIDENTIFIER
+    etl_id: UNIQUEIDENTIFIER
+    pipeline_step_id: UNIQUEIDENTIFIER
+    etl_step_attempt: SMALLINT
+    substeps: JSON
+    etl_step_status: VARCHAR(32)
+    etl_step_start_dt: DATETIME
+    etl_step_end_dt: DATETIME
