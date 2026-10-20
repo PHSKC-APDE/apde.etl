@@ -12,6 +12,8 @@ utils::globalVariables(c(
   "group",
   "group",
   "issue",
+  "keep_value",
+  "latest_period",
   "max_date",
   "median",
   "median_date",
