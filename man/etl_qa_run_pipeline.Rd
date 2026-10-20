@@ -96,6 +96,15 @@ The function provides identical output whether using \code{apde.data}, providing
 data.table that is in R's memory, or processing data directly on MS SQL Server.
 The key is to correctly set up the arguments. Please refer to the examples
 below for models that you should follow.
+
+\strong{Categorical variables:} For each categorical variable, the 10 most common
+non-missing values are identified using the most recent time period in which
+that variable has data. Those same 10 values (plus \code{NA}) are reported for
+every time period in the Excel output, so trends are complete over time. All
+remaining values are combined into \code{'Other values'}. To keep them readable,
+the PDF graphs show only \code{NA} plus the 8 most common of these values and
+never show \code{'Other values'}. When values are left off a graph, a caption
+notes this.
 }
 \note{
 This function replaces the deprecated \code{etl_qa_run_pipeline} function from the
