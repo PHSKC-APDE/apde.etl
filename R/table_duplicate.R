@@ -86,8 +86,8 @@
 #'   # Note: Requires BCP utility installation and proper database connections
 #'
 #'   # Setup connections
-#'   conn_from <- create_db_connection("source_server", prod = FALSE)
-#'   conn_to <- create_db_connection("dest_server", prod = FALSE)
+#'   conn_from <- apde.connect::connect(database = "hhsaw", prod = FALSE)
+#'   conn_to <- apde.connect::connect(database = "hhsaw", prod = TRUE)
 #'
 #'   # Example 1: Simple single table duplication
 #'   table_duplicate(conn_from = conn_from,
@@ -448,7 +448,7 @@ table_duplicate <- function(conn_from,
 #' @examples
 #'  \dontrun{
 #'   # Setup connection
-#'   conn <- create_db_connection("my_server", prod = FALSE)
+#'   conn <- apde.connect::connect(database = "hhsaw", prod = FALSE)
 #'
 #'   # Delete tables with default suffix
 #'   table_duplicate_delete(conn)

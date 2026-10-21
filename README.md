@@ -9,13 +9,13 @@ This package provides a variety of tools to facilitate APDE's ETL and informatic
 For APDE's custom *analytic tools*, please refer to the [rads](https://github.com/PHSKC-APDE/rads/) package. 
 
 ## Installation
-1.  `apde.etl` depends on version 17 or higher of [Microsoft ODBC Driver for SQL Server](https://docs.microsoft.com/en-us/sql/connect/odbc/download-odbc-driver-for-sql-server?view=sql-server-ver15). You can download it [here](https://go.microsoft.com/fwlink/?linkid=2187214)
+1.  `apde.etl` depends on version 17 or higher of [Microsoft ODBC Driver for SQL Server](https://learn.microsoft.com/en-us/sql/connect/odbc/download-odbc-driver-for-sql-server). You can download it [here](https://go.microsoft.com/fwlink/?linkid=2187214). The legacy 'SQL Server' driver that ships with Windows will not work.
 
-2.  Make sure remotes is installed in R ... 
-    - `install.packages("remotes")`.
+2.  Make sure pak is installed in R ... 
+    - `install.packages("pak")`
 
 3.  Install `apde.etl` in R ... 
-    - `remotes::install_github("PHSKC-APDE/apde.etl", auth_token = NULL)`
+    - `pak::pak("PHSKC-APDE/apde.etl")`
 
 4.  Load `apde.etl` in R ... 
     - `library(apde.etl)`
@@ -57,7 +57,7 @@ Check if the installed apde.etl package version is the latest available on GitHu
 Copy data from the data lake to the data warehouse using SQL Server's COPY INTO statement.
 
 ### `create_db_connection()`
-Create a connection to APDE's prod or dev servers.
+**Deprecated**. Please use [`apde.connect::connect()`](https://github.com/PHSKC-APDE/apde.connect) instead. For example, `create_db_connection(server = 'hhsaw')` becomes `apde.connect::connect(database = 'hhsaw')` and `create_db_connection(server = 'inthealth')` becomes `apde.connect::connect(database = 'inthealth_edw')`. `create_db_connection()` still works, but it now calls `apde.connect::connect()` under the hood, and `interactive = TRUE` is no longer supported.
 
 ### `deduplicate_addresses()`
 Remove duplicate addresses in the ref tables and synchronize the address tables between servers.

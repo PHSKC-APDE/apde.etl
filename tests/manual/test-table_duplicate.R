@@ -4,8 +4,8 @@ source("tests/manual/helper.R")
 
 test_that("table_duplicate copies table structure and data", {
   # Setup - using same server for both source and destination
-  conn_from <- create_db_connection("hhsaw", prod = FALSE)
-  conn_to <- create_db_connection("hhsaw", prod = FALSE)
+  conn_from <- apde.connect::connect(database = "hhsaw", prod = FALSE)
+  conn_to <- apde.connect::connect(database = "hhsaw", prod = FALSE)
   schema <- get_test_schema()
   source_table <- "test_duplicate_source"
   dest_table <- "test_duplicate_dest"
@@ -54,8 +54,8 @@ test_that("table_duplicate copies table structure and data", {
 
 test_that("table_duplicate works with structure only", {
   # Setup
-  conn_from <- create_db_connection("hhsaw", prod = FALSE)
-  conn_to <- create_db_connection("hhsaw", prod = FALSE)
+  conn_from <- apde.connect::connect(database = "hhsaw", prod = FALSE)
+  conn_to <- apde.connect::connect(database = "hhsaw", prod = FALSE)
   schema <- get_test_schema()
   source_table <- "test_duplicate_struct_source"
   dest_table <- "test_duplicate_struct_dest"
@@ -111,7 +111,7 @@ test_that("table_duplicate works with structure only", {
 
 test_that("table_duplicate_delete removes tables with specified suffix", {
   # Setup
-  conn <- create_db_connection("hhsaw", prod = FALSE)
+  conn <- apde.connect::connect(database = "hhsaw", prod = FALSE)
   schema <- get_test_schema()
   suffix_stem <- "_test_delete"
 
@@ -160,7 +160,7 @@ test_that("table_duplicate_delete removes tables with specified suffix", {
 
 test_that("table_duplicate_delete cancels when user declines", {
   # Setup
-  conn <- create_db_connection("hhsaw", prod = FALSE)
+  conn <- apde.connect::connect(database = "hhsaw", prod = FALSE)
   schema <- get_test_schema()
   suffix_stem <- "_test_cancel"
   table_name <- paste0("table", suffix_stem)

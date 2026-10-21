@@ -1,4 +1,13 @@
+test_that("create_db_connection is deprecated", {
+  local_mocked_bindings(connect = function(...) list(...), .package = "apde.connect")
+
+  lifecycle::expect_deprecated(create_db_connection("hhsaw"))
+})
+
 test_that("create_db_connection validates arguments correctly", {
+  old_opts <- options(lifecycle_verbosity = "quiet")
+  on.exit(options(old_opts), add = TRUE)
+
   # Test for invalid server
   expect_error(create_db_connection(server = "invalid_server"),
                "'arg' should be one of")
@@ -6,65 +15,46 @@ test_that("create_db_connection validates arguments correctly", {
   # Test for invalid prod
   expect_error(create_db_connection(prod = "yes"),
                "'prod' must be a logical value")
+  expect_error(create_db_connection(prod = NA),
+               "'prod' must be a logical value")
 
   # Test for invalid interactive
   expect_error(create_db_connection(interactive = "no"),
                "'interactive' must be a logical value")
 })
 
-test_that("create_db_connection selects correct server configurations", {
-  # Mock DBI::dbConnect
-  local_mocked_bindings(
-    dbConnect = function(...) {
-      args <- list(...)
-      # Return a list with just the key parameters we care about
-      list(
-        server = args$server,
-        database = args$database,
-        Server = args$Server,
-        Database = args$Database
-      )
-    },
-    .package = "DBI"
-  )
+test_that("create_db_connection errors when interactive = TRUE", {
+  local_mocked_bindings(connect = function(...) stop("connect() should not be called"),
+                        .package = "apde.connect")
+  old_opts <- options(lifecycle_verbosity = "quiet")
+  on.exit(options(old_opts), add = TRUE)
 
-  # Mock odbc::dbConnect
-  local_mocked_bindings(
-    dbConnect = function(...) {
-      args <- list(...)
-      # Return a list with just the key parameters we care about
-      list(
-        Server = args$Server,
-        Database = args$Database
-      )
-    },
-    .package = "odbc"
-  )
-
-  # Mock keyring functions
-  local_mocked_bindings(
-    key_list = function(...) list(username = "test_user"),
-    key_get = function(...) "test_password",
-    .package = "keyring"
-  )
-
-  # Test that correct servers are selected based on prod flag
-  expect_equal(
-    create_db_connection("phextractstore", prod = TRUE)$Server,
-    "KCITSQLPRPHIP40"
-  )
-
-  expect_equal(
-    create_db_connection("phextractstore", prod = FALSE)$Server,
-    "KCITSQLUATHIP40"
-  )
-
-  # Test that correct database names are used
-  hhsaw_conn <- create_db_connection("hhsaw", prod = TRUE)
-  expect_equal(hhsaw_conn$database, "hhs_analytics_workspace")
-
-  inthealth_conn <- create_db_connection("inthealth", prod = TRUE)
-  expect_equal(inthealth_conn$database, "inthealth_edw")
+  expect_error(create_db_connection("hhsaw", interactive = TRUE),
+               "ActiveDirectoryInteractive")
+  expect_error(create_db_connection("inthealth", interactive = TRUE),
+               "inthealth_edw")
 })
 
-# Run additional manual tests in /tests/manual/test_connections
+test_that("create_db_connection passes the correct arguments to apde.connect::connect()", {
+  # Mock apde.connect::connect() so it returns the arguments it receives
+  local_mocked_bindings(connect = function(...) list(...), .package = "apde.connect")
+  old_opts <- options(lifecycle_verbosity = "quiet")
+  on.exit(options(old_opts), add = TRUE)
+
+  expect_equal(create_db_connection("hhsaw"),
+               list(database = "hhsaw", prod = TRUE, auth = "integrated"))
+
+  expect_equal(create_db_connection("hhsaw", prod = FALSE),
+               list(database = "hhsaw", prod = FALSE, auth = "integrated"))
+
+  expect_equal(create_db_connection("inthealth"),
+               list(database = "inthealth_edw", prod = TRUE, auth = "integrated"))
+
+  expect_equal(create_db_connection("phextractstore", prod = FALSE),
+               list(database = "phextractstore", prod = FALSE, auth = "integrated"))
+
+  # default server is phextractstore (first option), as before
+  expect_equal(create_db_connection()$database, "phextractstore")
+})
+
+# Run additional manual tests in /tests/manual/test-create_db_connection.R

@@ -22,7 +22,7 @@ test_that("load_df_bcp loads data correctly to on-premises servers ", {
   )
 
   # Create empty table first
-  conn <- create_db_connection("phextractstore", prod = FALSE)
+  conn <- apde.connect::connect(database = "phextractstore", prod = FALSE)
   drop_test_table(conn, table_name, schema)
 
   sql <- glue::glue_sql("
@@ -46,7 +46,7 @@ test_that("load_df_bcp loads data correctly to on-premises servers ", {
   )
 
   # Verify data was loaded
-  conn <- create_db_connection("phextractstore", prod = FALSE)
+  conn <- apde.connect::connect(database = "phextractstore", prod = FALSE)
   result <- DBI::dbGetQuery(conn, glue::glue_sql("
     SELECT COUNT(*) as cnt FROM {`schema`}.{`table_name`}
   ", .con = conn))
@@ -79,7 +79,7 @@ test_that("load_df_bcp loads data correctly to Azure servers ", {
   )
 
   # Create empty table first
-  conn <- create_db_connection("hhsaw", prod = FALSE)
+  conn <- apde.connect::connect(database = "hhsaw", prod = FALSE)
   drop_test_table(conn, table_name, schema)
 
   sql <- glue::glue_sql("
@@ -105,7 +105,7 @@ test_that("load_df_bcp loads data correctly to Azure servers ", {
   )
 
   # Verify data was loaded
-  conn <- create_db_connection("hhsaw", prod = FALSE)
+  conn <- apde.connect::connect(database = "hhsaw", prod = FALSE)
   result <- DBI::dbGetQuery(conn, glue::glue_sql("
     SELECT COUNT(*) as cnt FROM {`schema`}.{`table_name`}
   ", .con = conn))

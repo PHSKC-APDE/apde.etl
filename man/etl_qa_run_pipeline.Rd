@@ -156,7 +156,7 @@ qa.df <- etl_qa_run_pipeline(
 
 # Example with SQL Server
 library(DBI)
-myconnection <- apde.data::authenticate_hhsaw()
+myconnection <- apde.connect::connect()
 qa.sql <- etl_qa_run_pipeline(
   data_source_type = 'sql_server',
   connection = myconnection,
