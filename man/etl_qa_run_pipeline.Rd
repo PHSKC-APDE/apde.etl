@@ -41,14 +41,17 @@ with this function, e.g., \code{data = myDataTable}. \emph{Required only when
 \code{data_source_type = 'r_dataframe'}}.
 \item \code{function_name}: Character string specifying the relevant
 \code{apde.data::xxx} function, e.g., \code{function_name = 'birth'}, which
-fetches birth data.
+fetches birth data with \code{apde.data::birth()}. Options are the datasets
+listed by \code{apde.data::list_data()}, except \code{'population'}.
 \emph{Required only when \code{data_source_type = 'apde.data'}}
 \item \code{kingco}: Logical vector of length 1. Identifies whether you want
 limit the data to King County. \emph{Required only when
 \code{data_source_type = 'apde.data'}}. Default is \code{kingco = TRUE}
 \item \code{version}: Character string specifying either \code{'final'} or
-\code{'stage'}. \emph{Required only when \code{data_source_type = 'apde.data'}}.
-Default is \code{version = 'stage'}
+\code{'stage'}. \emph{Used only when \code{data_source_type = 'apde.data'} and
+\code{function_name} is \code{'birth'} or \code{'brfss'}} (the only \code{apde.data}
+functions with stage and final options). It is ignored for all other
+\code{function_name} values. Default is \code{version = 'stage'}
 \item \code{schema_table}: The name of the schema and table to be accessed
 within the SQL Server \code{connection}. Must be in the form
 \code{myschema.mytable}, with a period as a separator.

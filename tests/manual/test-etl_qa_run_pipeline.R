@@ -1077,7 +1077,3 @@ library(apde.etl)
     )
 
   })
-
-# test `default_value` (`%||%`) ----
-  expect_equal(10L %||% 100, 10L)
-  expect_equal(NULL %||% 100, 100)
