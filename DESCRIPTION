@@ -16,7 +16,6 @@ Imports:
     configr,
     data.table,
     DBI,
-    dplyr,
     ggplot2,
     glue,
     httr,
