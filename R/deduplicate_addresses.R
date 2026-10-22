@@ -78,7 +78,7 @@ deduplicate_addresses <- function(conn_hhsaw = NULL,
 
     # Deduplicate
     adds[, row_cnt := .N, by = grouping]
-    print(dplyr::count(adds, row_cnt))
+    print(adds[, list(n = .N), keyby = row_cnt]) # number of rows for each duplicate count
 
     # See how many duplicates need to be removed
     adds_dups <- nrow(adds[row_cnt > 1])
@@ -118,8 +118,11 @@ deduplicate_addresses <- function(conn_hhsaw = NULL,
     grouping <- match.arg(grouping)
 
     # Compare and find differences
-    update_hhsaw <- dplyr::anti_join(df_phclaims, df_hhsaw, by = grouping)
-    update_phclaims <- dplyr::anti_join(df_hhsaw, df_phclaims, by = grouping)
+    # anti joins: rows in the first table with no match in the second
+    df_hhsaw <- data.table::as.data.table(df_hhsaw)
+    df_phclaims <- data.table::as.data.table(df_phclaims)
+    update_hhsaw <- df_phclaims[!df_hhsaw, on = grouping]
+    update_phclaims <- df_hhsaw[!df_phclaims, on = grouping]
 
     # Update tables so they are in sync
     if (nrow(update_hhsaw) > 0) {

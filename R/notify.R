@@ -647,7 +647,7 @@ apde_notify_list_set <- function(msg_id = NULL,
   if(length(choices) > 0) {
     choices <- as.data.frame(choices)
     colnames(choices) <- c("address")
-    choices <- dplyr::inner_join(choices, address_list)
+    choices <- merge(choices, address_list, by = "address") # inner join to get the address ids
     for(i in 1:nrow(choices)) {
       DBI::dbExecute(conn,
                      glue::glue_sql("INSERT INTO [apde].[notify_list]
