@@ -43,7 +43,7 @@ test_all_connections <- function() {
   # Create a grid of all test combinations
   dt <- CJ(xserver = c("phextractstore", "hhsaw", "inthealth"),
            xprod = c(TRUE, FALSE),
-           xinteractive = c(TRUE, FALSE))
+           xinteractive = c(TRUE, FALSE)) # `interactive` is ignored, so both should connect
 
   # Loop through each combination and test the connection
   for (i in 1:nrow(dt)) {
