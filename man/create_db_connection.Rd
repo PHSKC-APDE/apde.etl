@@ -18,10 +18,12 @@ or \code{'phextractstore'}. Note that \code{'inthealth'} connects to the
 \item{prod}{Whether the production or dev/WIP servers are to be used. Defaults
 to \code{prod = TRUE}.}
 
-\item{interactive}{\strong{No longer supported.} Must be \code{FALSE}, which uses
-Windows integrated authentication. \code{interactive = TRUE} (i.e.,
-\code{ActiveDirectoryInteractive} authentication) now throws an error. Use
-\code{\link[apde.connect:connect]{apde.connect::connect()}} instead. Defaults to \code{interactive = FALSE}.}
+\item{interactive}{\strong{Ignored.} Kept only so that existing code does not
+break. \code{interactive = TRUE} used to request \code{ActiveDirectoryInteractive}
+(pop-up) authentication, which is no longer supported. Now, regardless of
+this value, the function uses Windows integrated authentication followed by
+\verb{keyring::} credentials (i.e., \code{apde.connect::connect(auth = 'auto')}).
+Defaults to \code{interactive = FALSE}.}
 }
 \value{
 A database connection object
@@ -33,9 +35,10 @@ A database connection object
 \code{\link[apde.connect:connect]{apde.connect::connect()}} instead.
 
 Create a connection to APDE prod or dev servers. While deprecated, this
-function continues to work for \code{interactive = FALSE}, but it uses
-\code{\link[apde.connect:connect]{apde.connect::connect()}} under the hood. \code{interactive = TRUE} is no longer
-supported and will throw an error.
+function continues to work, but it uses \code{\link[apde.connect:connect]{apde.connect::connect()}} under the
+hood. It always tries Windows integrated authentication first and then falls
+back to the credentials stored in the \code{'hhsaw'} \verb{keyring::} service. The
+\code{interactive} argument is ignored.
 }
 \details{
 \strong{Switching to \code{apde.connect::connect()}:}\tabular{ll}{

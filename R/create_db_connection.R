@@ -10,9 +10,10 @@
 #' [apde.connect::connect()] instead.
 #'
 #' Create a connection to APDE prod or dev servers. While deprecated, this
-#' function continues to work for `interactive = FALSE`, but it uses
-#' [apde.connect::connect()] under the hood. `interactive = TRUE` is no longer
-#' supported and will throw an error.
+#' function continues to work, but it uses [apde.connect::connect()] under the
+#' hood. It always tries Windows integrated authentication first and then falls
+#' back to the credentials stored in the `'hhsaw'` `keyring::` service. The
+#' `interactive` argument is ignored.
 #'
 #' @note
 #' This function replaces the deprecated `create_db_connection` function from the
@@ -23,10 +24,12 @@
 #' `inthealth_edw` database.
 #' @param prod Whether the production or dev/WIP servers are to be used. Defaults
 #' to `prod = TRUE`.
-#' @param interactive **No longer supported.** Must be `FALSE`, which uses
-#' Windows integrated authentication. `interactive = TRUE` (i.e.,
-#' `ActiveDirectoryInteractive` authentication) now throws an error. Use
-#' [apde.connect::connect()] instead. Defaults to `interactive = FALSE`.
+#' @param interactive **Ignored.** Kept only so that existing code does not
+#' break. `interactive = TRUE` used to request `ActiveDirectoryInteractive`
+#' (pop-up) authentication, which is no longer supported. Now, regardless of
+#' this value, the function uses Windows integrated authentication followed by
+#' `keyring::` credentials (i.e., `apde.connect::connect(auth = 'auto')`).
+#' Defaults to `interactive = FALSE`.
 #'
 #' @details
 #' **Switching to `apde.connect::connect()`:**
@@ -71,21 +74,7 @@ create_db_connection <- function(server = c("phextractstore", "hhsaw", "inthealt
     stop("'prod' must be a logical value (TRUE/FALSE)")
   }
 
-  if (!is.logical(interactive) || length(interactive) != 1 || is.na(interactive)) {
-    stop("'interactive' must be a logical value (TRUE/FALSE)")
-  }
-
-  if (isTRUE(interactive)) {
-    lifecycle::deprecate_stop(
-      when = "2.5.0",
-      what = "create_db_connection(interactive)",
-      details = paste0(
-        "Interactive (ActiveDirectoryInteractive) authentication is no longer supported. ",
-        "Please use apde.connect::connect(), e.g., apde.connect::connect(database = '",
-        if (server == "inthealth") "inthealth_edw" else server, "', prod = ", prod, ")."
-      )
-    )
-  }
+  # `interactive` is intentionally ignored (see @param interactive)
 
   # connect via apde.connect ----
   database <- switch(server,
@@ -93,5 +82,6 @@ create_db_connection <- function(server = c("phextractstore", "hhsaw", "inthealt
                      inthealth = "inthealth_edw",
                      phextractstore = "phextractstore")
 
-  apde.connect::connect(database = database, prod = prod, auth = "integrated")
+  # 'auto' = Windows integrated authentication, then keyring fallback
+  apde.connect::connect(database = database, prod = prod, auth = "auto")
 }

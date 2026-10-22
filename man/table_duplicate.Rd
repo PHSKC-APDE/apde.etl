@@ -113,8 +113,8 @@ This function replaces the deprecated \code{table_duplicate_f()} function from t
   # Note: Requires BCP utility installation and proper database connections
 
   # Setup connections
-  conn_from <- apde.connect::connect(database = "hhsaw", prod = TRUE)
-  conn_to <- apde.connect::connect(database = "hhsaw", prod = FALSE)
+  conn_from <- apde.connect::connect(database = "hhsaw", prod = FALSE)
+  conn_to <- apde.connect::connect(database = "hhsaw", prod = TRUE)
 
   # Example 1: Simple single table duplication
   table_duplicate(conn_from = conn_from,

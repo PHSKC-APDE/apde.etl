@@ -57,7 +57,7 @@ Check if the installed apde.etl package version is the latest available on GitHu
 Copy data from the data lake to the data warehouse using SQL Server's COPY INTO statement.
 
 ### `create_db_connection()`
-**Deprecated**. Please use [`apde.connect::connect()`](https://github.com/PHSKC-APDE/apde.connect) instead. For example, `create_db_connection(server = 'hhsaw')` becomes `apde.connect::connect(database = 'hhsaw')` and `create_db_connection(server = 'inthealth')` becomes `apde.connect::connect(database = 'inthealth_edw')`. `create_db_connection()` still works, but it now calls `apde.connect::connect()` under the hood, and `interactive = TRUE` is no longer supported.
+**Deprecated**. Please use [`apde.connect::connect()`](https://github.com/PHSKC-APDE/apde.connect) instead. For example, `create_db_connection(server = 'hhsaw')` becomes `apde.connect::connect(database = 'hhsaw')` and `create_db_connection(server = 'inthealth')` becomes `apde.connect::connect(database = 'inthealth_edw')`. `create_db_connection()` still works, but it now calls `apde.connect::connect()` under the hood. It uses Windows credentials first and then falls back to your `'hhsaw'` keyring credentials. The `interactive` argument is now ignored.
 
 ### `deduplicate_addresses()`
 Remove duplicate addresses in the ref tables and synchronize the address tables between servers.
