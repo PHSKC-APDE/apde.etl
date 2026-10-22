@@ -38,7 +38,8 @@
 #'
 #' - `function_name`: Character string specifying the relevant
 #'   `apde.data::xxx` function, e.g., `function_name = 'birth'`, which
-#'   fetches birth data.
+#'   fetches birth data with `apde.data::birth()`. Options are the datasets
+#'   listed by `apde.data::list_data()`, except `'population'`.
 #'   *Required only when `data_source_type = 'apde.data'`*
 #'
 #' - `kingco`: Logical vector of length 1. Identifies whether you want
@@ -46,8 +47,10 @@
 #'   `data_source_type = 'apde.data'`*. Default is `kingco = TRUE`
 #'
 #' - `version`: Character string specifying either `'final'` or
-#'   `'stage'`. *Required only when `data_source_type = 'apde.data'`*.
-#'   Default is `version = 'stage'`
+#'   `'stage'`. *Used only when `data_source_type = 'apde.data'` and
+#'   `function_name` is `'birth'` or `'brfss'`* (the only `apde.data`
+#'   functions with stage and final options). It is ignored for all other
+#'   `function_name` values. Default is `version = 'stage'`
 #'
 #' - `schema_table`: The name of the schema and table to be accessed
 #'   within the SQL Server `connection`. Must be in the form
@@ -247,10 +250,11 @@ etl_qa_run_pipeline <- function(connection = NULL,
   ### data_params$function_name ----
   if (data_source_type == 'apde.data' && !'function_name' %in% names(data_params)) {
     stop("\U0001f47f\nWhen `data_source_type = 'apde.data'`, data_params must include a 'function_name'. Options are limited to:\n",
-         paste0(ls(getNamespace("apde.data"))[!grepl('_', ls(getNamespace("apde.data")))], collapse = ', '), ".")
-  } else if (data_source_type == 'apde.data' && !data_params$function_name %in% ls(getNamespace('apde.data'))){
+         paste0(etl_qa_apde_data_functions()$all, collapse = ', '), ".")
+  } else if (data_source_type == 'apde.data' &&
+             !isTRUE(data_params$function_name %in% etl_qa_apde_data_functions()$all)){
     stop("\U0001f47f\nThe data_params$function_name you provided is invalid. Available options are limited to:\n",
-         paste0(ls(getNamespace("apde.data"))[!grepl('_', ls(getNamespace("apde.data")))], collapse = ', '), ".")
+         paste0(etl_qa_apde_data_functions()$all, collapse = ', '), ".")
   }
 
   ### data_params$kingco ----
@@ -264,7 +268,9 @@ etl_qa_run_pipeline <- function(connection = NULL,
     }
 
   ### data_params$version ----
-    if (data_source_type == 'apde.data') {
+    # only birth() & brfss() have stage / final versions; ignored for other apde.data functions
+    if (data_source_type == 'apde.data' &&
+        data_params$function_name %in% etl_qa_apde_data_functions()$versioned) {
       if (!'version' %in% names(data_params)) {
         message("data_params$version not provided. Defaulting to 'stage'.")
         data_params$version <- 'stage'
@@ -335,37 +341,6 @@ etl_qa_run_pipeline <- function(connection = NULL,
     exported = exported
   ))
 }
-
-# Tiny helper function ----
-#' @title Helper function to provide a default value for NULL
-#'
-#' @description
-#' This infix function returns the first argument if it's not NULL,
-#' otherwise it returns the second argument.
-#'
-#' @name default_value
-#' @rdname default_value
-#' @param x The primary value to check
-#' @param y The default value to use if x is NULL
-#'
-#' @return The value of x if it's not NULL, otherwise the value of y
-#'
-#' @examples
-#' # Basic usage
-#' NULL %||% 5  # Returns 5
-#' 10 %||% 5    # Returns 10
-#'
-#' # In a function
-#' f <- function(x = NULL) {
-#'   x %||% "default"
-#' }
-#' f()        # Returns "default"
-#' f("value") # Returns "value"
-#'
-#' @keywords internal
-#' @noRd
-#'
-`%||%` <- function(x, y) if (is.null(x)) y else x
 
 #--------------------------------- ----
 #---- STEP 1: Create config object ----
@@ -540,12 +515,17 @@ etl_qa_setup_config <- function(data_source_type,
     if (!'function_name' %in% names(data_params)) {
       stop("\U0001f47f\nFor 'apde.data' type, data_params must include a 'function_name'")
     }
-    if (!data_params$function_name %in% ls(getNamespace("apde.data"))[!grepl('_', ls(getNamespace("apde.data")))]){
-      stop("\U0001f47f\nWhen `data_source_type = 'apde.data'`, data_params must include a valid 'function_name' (e.g., 'birth', 'chars', 'brfss', etc.)")
+    if (!isTRUE(data_params$function_name %in% etl_qa_apde_data_functions()$all)){
+      stop("\U0001f47f\nWhen `data_source_type = 'apde.data'`, data_params must include a valid 'function_name'. Options are limited to:\n",
+           paste0(etl_qa_apde_data_functions()$all, collapse = ', '), ".")
     }
-    # Add 'kingco' and 'version' only for 'apde.data' type
-    config$data_params$kingco <- data_params$kingco %||% TRUE
-    config$data_params$version <- data_params$version %||% 'stage'
+    # Add 'kingco' (and 'version', where it applies) only for 'apde.data' type
+    if (is.null(config$data_params$kingco)) config$data_params$kingco <- TRUE
+    if (data_params$function_name %in% etl_qa_apde_data_functions()$versioned) {
+      if (is.null(config$data_params$version)) config$data_params$version <- 'stage'
+    } else {
+      config$data_params$version <- NULL # ignored because this apde.data function has no stage / final versions
+    }
 
     config$process_location <- 'r'
   }
@@ -563,9 +543,6 @@ etl_qa_setup_config <- function(data_source_type,
     }
     config$time_range <- data_params$time_range
   }
-
-  # Add common parameters
-  config$data_params$cols <- data_params$cols %||% NULL
 
   # Create and return an S3 object
   structure(config, class = "qa_data_config")
@@ -817,6 +794,25 @@ process_r_dataframe <- function(config) {
        chi_standards = chi_std_comparison)
 }
 
+# etl_qa_apde_data_functions() - apde.data functions usable by the ETL QA pipeline ----
+#' apde.data functions that can be used with `data_source_type = 'apde.data'`
+#'
+#' @return A list with two character vectors:
+#' - `all`: every valid `data_params$function_name`, i.e., the datasets in
+#'   `apde.data::list_data()` except `'population'` (which does not have the
+#'   `cols`, `year`, & `kingco` arguments the pipeline needs)
+#' - `versioned`: the subset that accept `version = 'stage'` or `'final'`
+#'
+#' @keywords internal
+#' @noRd
+#'
+etl_qa_apde_data_functions <- function() {
+  list(
+    all = setdiff(apde.data::list_data(), 'population'),
+    versioned = c('birth', 'brfss')
+  )
+}
+
 # process_apde_data() - Function to process apde.data::xxx() ----
 #' Process apde.data data for ETL QA
 #'
@@ -828,15 +824,18 @@ process_r_dataframe <- function(config) {
 #'
 process_apde_data <- function(config) {
   # Validate config$data_params$kingco
-  config$data_params$kingco <- config$data_params$kingco %||% TRUE
+  if (is.null(config$data_params$kingco)) config$data_params$kingco <- TRUE
   if (!is.logical(config$data_params$kingco) || length(config$data_params$kingco) != 1 || is.na(config$data_params$kingco)) {
     stop("\U0001f47f\nIf provided, `config$data_params$kingco` must be a single logical value (TRUE or FALSE).")
   }
 
-  # Validate config$data_params$version
-  config$data_params$version <- config$data_params$version %||% 'stage'
-  if (!(config$data_params$version %in% c('stage', 'final'))) {
-    stop("\U0001f47f\nInvalid value for config$data_params$version. It must be either 'stage' or 'final'.")
+  # Validate config$data_params$version (only birth() & brfss() have stage / final versions)
+  has_version <- config$data_params$function_name %in% etl_qa_apde_data_functions()$versioned
+  if (has_version) {
+    if (is.null(config$data_params$version)) config$data_params$version <- 'stage'
+    if (!(config$data_params$version %in% c('stage', 'final'))) {
+      stop("\U0001f47f\nInvalid value for config$data_params$version. It must be either 'stage' or 'final'.")
+    }
   }
 
   # Identify CHI variables (if needed) ----
@@ -864,10 +863,14 @@ process_apde_data <- function(config) {
   # Use the appropriate apde.data::xxx function ----
   data_func <- utils::getFromNamespace(config$data_params$function_name, 'apde.data') # dynamically get the function without loading all of apde.data
 
-  dt <- data_func(year = config$time_range[1]:config$time_range[2],
-                  cols = unique(c(config$time_var, config$data_params$cols)),
-                  version = config$data_params$version,
-                  kingco = config$data_params$kingco)
+  data_args <- list(year = config$time_range[1]:config$time_range[2],
+                    cols = unique(c(config$time_var, config$data_params$cols)),
+                    kingco = config$data_params$kingco)
+  if (has_version) {
+    data_args$version <- config$data_params$version # other apde.data functions have no `version` argument
+  }
+
+  dt <- do.call(data_func, data_args)
   config$data_params$data <- dt
 
   # Now process the data similarly to process_r_dataframe ----

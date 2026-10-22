@@ -24,5 +24,5 @@ skip_if_no_db <- function(database, prod = TRUE) {
 
   if (get(key, envir = db_probe_cache)) return(invisible(TRUE)) # can connect, so run the test
 
-  testthat::skip(paste0("Cannot connect to ", database, if (prod) " (prod)" else " (dev)")) # else give failure message
+  testthat::skip(paste0("Cannot connect to ", database, if (prod) " (prod)" else " (dev)")) # cannot connect, so skip the test (it is reported as skipped, not failed)
 }
