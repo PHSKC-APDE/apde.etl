@@ -12,21 +12,42 @@ create_db_connection(
 }
 \arguments{
 \item{server}{Whether we are connecting to \code{'hhsaw'}, \code{'inthealth'},
-or \code{'phextractstore'}}
+or \code{'phextractstore'}. Note that \code{'inthealth'} connects to the
+\code{inthealth_edw} database.}
 
 \item{prod}{Whether the production or dev/WIP servers are to be used. Defaults
 to \code{prod = TRUE}.}
 
-\item{interactive}{Whether to input password manually for HHSAW/inthealth or
-to use keyring. \code{TRUE} should be used when connecting on VM, typically,
-or if keyring/odbc are not set up yet for a given server. Defaults to
-\code{interactive = FALSE}.}
+\item{interactive}{\strong{Ignored.} Kept only so that existing code does not
+break. \code{interactive = TRUE} used to request \code{ActiveDirectoryInteractive}
+(pop-up) authentication, which is no longer supported. Now, regardless of
+this value, the function uses Windows integrated authentication followed by
+\verb{keyring::} credentials (i.e., \code{apde.connect::connect(auth = 'auto')}).
+Defaults to \code{interactive = FALSE}.}
 }
 \value{
 A database connection object
 }
 \description{
-Create a connection to APDE prod or dev servers
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
+
+\code{create_db_connection()} was deprecated in apde.etl 2.5.0. Please use
+\code{\link[apde.connect:connect]{apde.connect::connect()}} instead.
+
+Create a connection to APDE prod or dev servers. While deprecated, this
+function continues to work, but it uses \code{\link[apde.connect:connect]{apde.connect::connect()}} under the
+hood. It always tries Windows integrated authentication first and then falls
+back to the credentials stored in the \code{'hhsaw'} \verb{keyring::} service. The
+\code{interactive} argument is ignored.
+}
+\details{
+\strong{Switching to \code{apde.connect::connect()}:}\tabular{ll}{
+   \strong{Old code} \tab \strong{New code} \cr
+   \code{create_db_connection(server = 'hhsaw')} \tab \code{apde.connect::connect(database = 'hhsaw')} \cr
+   \code{create_db_connection(server = 'inthealth')} \tab \code{apde.connect::connect(database = 'inthealth_edw')} \cr
+   \code{create_db_connection(server = 'phextractstore')} \tab \code{apde.connect::connect(database = 'phextractstore')} \cr
+   \code{create_db_connection(server = 'hhsaw', prod = FALSE)} \tab \code{apde.connect::connect(database = 'hhsaw', prod = FALSE)} \cr
+}
 }
 \note{
 This function replaces the deprecated \code{create_db_connection} function from the
@@ -34,14 +55,13 @@ This function replaces the deprecated \code{create_db_connection} function from 
 }
 \examples{
 \dontrun{
+# Deprecated. Please use apde.connect::connect() instead.
+
 # Connect to production HHSAW
 conn <- create_db_connection(server = "hhsaw", prod = TRUE)
 
 # Connect to development inthealth server
 conn <- create_db_connection(server = "inthealth", prod = FALSE)
-
-# Connect to phextractstore with interactive authentication
-conn <- create_db_connection(server = "phextractstore", interactive = TRUE)
 }
 
 }

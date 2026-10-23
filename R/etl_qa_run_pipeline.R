@@ -26,8 +26,14 @@
 #' - `cols`: Character vector specifying the column names to analyze,
 #'   e.g., `cols = c('race4', 'birth_weight_grams', 'birthplace_city')`
 #'
-#' - `time_range`: Character vector of length 2 specifying the start
-#'   and end of the time range, e.g., `time_range = c(2015, 2024)`
+#' - `time_range`: Numeric vector of length 2 specifying the start
+#'   and end of the time range, e.g., `time_range = c(2015, 2024)`.
+#'   When `data_source_type = 'apde.data'`, years in the range that have
+#'   no data (e.g., HYS off-years) are dropped with a message. For
+#'   `function_name = 'pums'`, `time_range` must cover either one year
+#'   (e.g., `c(2022, 2022)`) or exactly five consecutive years (e.g.,
+#'   `c(2018, 2022)`), because each maps to one PUMS release, and years
+#'   are not filtered
 #'
 #' - `time_var`: Character string specifying the time interval variable,
 #'   e.g., `time_var = 'chi_year'`
@@ -38,16 +44,25 @@
 #'
 #' - `function_name`: Character string specifying the relevant
 #'   `apde.data::xxx` function, e.g., `function_name = 'birth'`, which
-#'   fetches birth data.
+#'   fetches birth data with `apde.data::birth()`. Options are the datasets
+#'   listed by `apde.data::list_data()`, except `'population'`.
 #'   *Required only when `data_source_type = 'apde.data'`*
 #'
 #' - `kingco`: Logical vector of length 1. Identifies whether you want
 #'   limit the data to King County. *Required only when
 #'   `data_source_type = 'apde.data'`*. Default is `kingco = TRUE`
 #'
-#' - `version`: Character string specifying either `'final'` or
-#'   `'stage'`. *Required only when `data_source_type = 'apde.data'`*.
-#'   Default is `version = 'stage'`
+#' - `version`: Character string specifying the version of the data.
+#'   *Used only when `data_source_type = 'apde.data'` and `function_name`
+#'   is `'birth'`, `'brfss'`, or `'hys'`* (the only `apde.data` functions
+#'   with a `version` argument):
+#'   - `'birth'` & `'brfss'`: either `'stage'` or `'final'`. Default is
+#'     `version = 'stage'`
+#'   - `'hys'`: the name of a HYS release, e.g., `'dev2025'`. Default is
+#'     `version = 'best'`.
+#'
+#'   For all other `function_name` values, `version` is ignored with a
+#'   message
 #'
 #' - `schema_table`: The name of the schema and table to be accessed
 #'   within the SQL Server `connection`. Must be in the form
@@ -81,6 +96,15 @@
 #' data.table that is in R's memory, or processing data directly on MS SQL Server.
 #' The key is to correctly set up the arguments. Please refer to the examples
 #' below for models that you should follow.
+#'
+#' **Categorical variables:** For each categorical variable, the 10 most common
+#' non-missing values are identified using the most recent time period in which
+#' that variable has data. Those same 10 values (plus `NA`) are reported for
+#' every time period in the Excel output, so trends are complete over time. All
+#' remaining values are combined into `'Other values'`. To keep them readable,
+#' the PDF graphs show only `NA` plus the 8 most common of these values and
+#' never show `'Other values'`. When values are left off a graph, a caption
+#' notes this.
 #'
 #' @seealso
 #' - [etl_qa_setup_config()] for Step 1: Creating the `config` object
@@ -136,7 +160,7 @@
 #'
 #' # Example with SQL Server
 #' library(DBI)
-#' myconnection <- apde.data::authenticate_hhsaw()
+#' myconnection <- apde.connect::connect()
 #' qa.sql <- etl_qa_run_pipeline(
 #'   data_source_type = 'sql_server',
 #'   connection = myconnection,
@@ -238,10 +262,11 @@ etl_qa_run_pipeline <- function(connection = NULL,
   ### data_params$function_name ----
   if (data_source_type == 'apde.data' && !'function_name' %in% names(data_params)) {
     stop("\U0001f47f\nWhen `data_source_type = 'apde.data'`, data_params must include a 'function_name'. Options are limited to:\n",
-         paste0(ls(getNamespace("apde.data"))[!grepl('_', ls(getNamespace("apde.data")))], collapse = ', '), ".")
-  } else if (data_source_type == 'apde.data' && !data_params$function_name %in% ls(getNamespace('apde.data'))){
+         paste0(etl_qa_supported_datasets()$all, collapse = ', '), ".")
+  } else if (data_source_type == 'apde.data' &&
+             !isTRUE(data_params$function_name %in% etl_qa_supported_datasets()$all)){
     stop("\U0001f47f\nThe data_params$function_name you provided is invalid. Available options are limited to:\n",
-         paste0(ls(getNamespace("apde.data"))[!grepl('_', ls(getNamespace("apde.data")))], collapse = ', '), ".")
+         paste0(etl_qa_supported_datasets()$all, collapse = ', '), ".")
   }
 
   ### data_params$kingco ----
@@ -255,13 +280,9 @@ etl_qa_run_pipeline <- function(connection = NULL,
     }
 
   ### data_params$version ----
+    # only birth(), brfss(), & hys() have a version argument; ignored for other apde.data functions
     if (data_source_type == 'apde.data') {
-      if (!'version' %in% names(data_params)) {
-        message("data_params$version not provided. Defaulting to 'stage'.")
-        data_params$version <- 'stage'
-      } else if (!(data_params$version %in% c('stage', 'final'))) {
-        stop("\U0001f47f\nInvalid value for data_params$version. It must be either 'stage' or 'final'.")
-      }
+      data_params$version <- etl_qa_resolve_version(data_params$function_name, data_params$version)
     }
 
   ### data_params$schema_table ----
@@ -326,37 +347,6 @@ etl_qa_run_pipeline <- function(connection = NULL,
     exported = exported
   ))
 }
-
-# Tiny helper function ----
-#' @title Helper function to provide a default value for NULL
-#'
-#' @description
-#' This infix function returns the first argument if it's not NULL,
-#' otherwise it returns the second argument.
-#'
-#' @name default_value
-#' @rdname default_value
-#' @param x The primary value to check
-#' @param y The default value to use if x is NULL
-#'
-#' @return The value of x if it's not NULL, otherwise the value of y
-#'
-#' @examples
-#' # Basic usage
-#' NULL %||% 5  # Returns 5
-#' 10 %||% 5    # Returns 10
-#'
-#' # In a function
-#' f <- function(x = NULL) {
-#'   x %||% "default"
-#' }
-#' f()        # Returns "default"
-#' f("value") # Returns "value"
-#'
-#' @keywords internal
-#' @noRd
-#'
-`%||%` <- function(x, y) if (is.null(x)) y else x
 
 #--------------------------------- ----
 #---- STEP 1: Create config object ----
@@ -436,7 +426,7 @@ etl_qa_run_pipeline <- function(connection = NULL,
 #'
 #' # Example with SQL Server
 #' library(DBI)
-#' myconnection <- apde.data::authenticate_hhsaw()
+#' myconnection <- apde.connect::connect()
 #' config.sql <- etl_qa_setup_config(
 #'   data_source_type = 'sql_server',
 #'   connection = myconnection,
@@ -531,12 +521,13 @@ etl_qa_setup_config <- function(data_source_type,
     if (!'function_name' %in% names(data_params)) {
       stop("\U0001f47f\nFor 'apde.data' type, data_params must include a 'function_name'")
     }
-    if (!data_params$function_name %in% ls(getNamespace("apde.data"))[!grepl('_', ls(getNamespace("apde.data")))]){
-      stop("\U0001f47f\nWhen `data_source_type = 'apde.data'`, data_params must include a valid 'function_name' (e.g., 'birth', 'chars', 'brfss', etc.)")
+    if (!isTRUE(data_params$function_name %in% etl_qa_supported_datasets()$all)){
+      stop("\U0001f47f\nWhen `data_source_type = 'apde.data'`, data_params must include a valid 'function_name'. Options are limited to:\n",
+           paste0(etl_qa_supported_datasets()$all, collapse = ', '), ".")
     }
-    # Add 'kingco' and 'version' only for 'apde.data' type
-    config$data_params$kingco <- data_params$kingco %||% TRUE
-    config$data_params$version <- data_params$version %||% 'stage'
+    # Add 'kingco' (and 'version', where it applies) only for 'apde.data' type
+    if (is.null(config$data_params$kingco)) config$data_params$kingco <- TRUE
+    config$data_params$version <- etl_qa_resolve_version(data_params$function_name, config$data_params$version)
 
     config$process_location <- 'r'
   }
@@ -554,9 +545,6 @@ etl_qa_setup_config <- function(data_source_type,
     }
     config$time_range <- data_params$time_range
   }
-
-  # Add common parameters
-  config$data_params$cols <- data_params$cols %||% NULL
 
   # Create and return an S3 object
   structure(config, class = "qa_data_config")
@@ -757,8 +745,8 @@ process_r_dataframe <- function(config) {
     vals_categorical = data.table::data.table() # create a data.table with zero columns and zero rows, just to have a data.table object so rest of code will work
   }
 
-  # Keep only top 8 most common / frequent categorical values (PLUS NA) ----
-  vals_categorical <- keep_top_8(categorical_freq = vals_categorical, config = config)
+  # Keep only top 10 most common categorical values in most recent period (PLUS NA) ----
+  vals_categorical <- keep_top_n(categorical_freq = vals_categorical, config = config, n = 10)
 
   # Comparison with CHI standards (if needed) ----
   if(isTRUE(config$data_params$check_chi)){
@@ -808,6 +796,78 @@ process_r_dataframe <- function(config) {
        chi_standards = chi_std_comparison)
 }
 
+# etl_qa_supported_datasets() - apde.data functions usable by the ETL QA pipeline ----
+#' apde.data functions that can be used with `data_source_type = 'apde.data'`
+#'
+#' @return A list with two character vectors:
+#' - `all`: every valid `data_params$function_name`, i.e., the datasets in
+#'   `apde.data::list_data()` except `'population'` (which does not have the
+#'   `cols`, `year`, & `kingco` arguments the pipeline needs)
+#' - `versioned`: the subset that have a `version` argument
+#' - `version_defaults`: named vector of the default `version` for each
+#'   function in `versioned`
+#'
+#' @keywords internal
+#' @noRd
+#'
+etl_qa_supported_datasets <- function() {
+  version_defaults <- c(birth = 'stage',
+                        brfss = 'stage',
+                        hys = 'best')
+  list(
+    all = setdiff(apde.data::list_data(), 'population'),
+    versioned = names(version_defaults),
+    version_defaults = version_defaults
+  )
+}
+
+# etl_qa_resolve_version() - default & validate data_params$version ----
+#' Default and validate `data_params$version` for `data_source_type = 'apde.data'`
+#'
+#' - Functions without a `version` argument: `version` is ignored
+#'   with a message and `NULL` is returned.
+#' - birth & brfss: defaults to `'stage'` and must be `'stage'` or `'final'`.
+#' - hys: defaults to `'best'` and must be a single character string. Valid
+#'   HYS releases are validated by `apde.data::list_data_years()` rather than here.
+#'
+#' @param function_name Name of the apde.data function, e.g., `'birth'`
+#' @param version The `data_params$version` supplied by the user, or `NULL`
+#'
+#' @return The version to use, or `NULL` when `function_name` has no
+#'   `version` argument
+#'
+#' @keywords internal
+#' @noRd
+#'
+etl_qa_resolve_version <- function(function_name, version) {
+  version_defaults <- etl_qa_supported_datasets()$version_defaults
+
+  # functions without a version argument ----
+  if (!function_name %in% names(version_defaults)) {
+    if (!is.null(version)) {
+      message("\u26A0\ufe0f apde.data::", function_name, "() does not have a `version` argument, so ",
+              "data_params$version = '", paste(version, collapse = ', '), "' is being ignored.")
+    }
+    return(NULL)
+  }
+
+  # default ----
+  if (is.null(version)) {
+    version <- unname(version_defaults[function_name])
+    message("data_params$version not provided. Defaulting to '", version, "'.")
+  }
+
+  # validate ----
+  if (!is.character(version) || length(version) != 1 || is.na(version)) {
+    stop("\U0001f47f\ndata_params$version must be a single character string, e.g., '", version_defaults[function_name], "'.")
+  }
+  if (function_name %in% c('birth', 'brfss') && !version %in% c('stage', 'final')) {
+    stop("\U0001f47f\nInvalid value for data_params$version. For '", function_name, "' it must be either 'stage' or 'final'.")
+  }
+
+  return(version)
+}
+
 # process_apde_data() - Function to process apde.data::xxx() ----
 #' Process apde.data data for ETL QA
 #'
@@ -819,20 +879,38 @@ process_r_dataframe <- function(config) {
 #'
 process_apde_data <- function(config) {
   # Validate config$data_params$kingco
-  config$data_params$kingco <- config$data_params$kingco %||% TRUE
+  if (is.null(config$data_params$kingco)) config$data_params$kingco <- TRUE
   if (!is.logical(config$data_params$kingco) || length(config$data_params$kingco) != 1 || is.na(config$data_params$kingco)) {
     stop("\U0001f47f\nIf provided, `config$data_params$kingco` must be a single logical value (TRUE or FALSE).")
   }
 
-  # Validate config$data_params$version
-  config$data_params$version <- config$data_params$version %||% 'stage'
-  if (!(config$data_params$version %in% c('stage', 'final'))) {
-    stop("\U0001f47f\nInvalid value for config$data_params$version. It must be either 'stage' or 'final'.")
+  # Validate config$data_params$version (only birth(), brfss(), & hys() have a version argument)
+  config$data_params$version <- etl_qa_resolve_version(config$data_params$function_name, config$data_params$version)
+  has_version <- !is.null(config$data_params$version)
+
+  # Identify years with data ----
+  # Drop requested years that do not exist (e.g., HYS is only collected every other year).
+  # Skip PUMS because pums() needs a single year or a 5-year period, e.g., 2018:2022, which includes 2020
+  years <- config$time_range[1]:config$time_range[2]
+  if (config$data_params$function_name != 'pums') {
+    valid_years <- apde.data::list_data_years(dataset = config$data_params$function_name,
+                                              version = if (has_version) config$data_params$version else NULL)
+    dropped_years <- setdiff(years, valid_years)
+    years <- intersect(years, valid_years)
+    if (length(years) == 0) {
+      stop("\U1F6D1\nNo ", config$data_params$function_name, " data are available for data_params$time_range = c(",
+           config$time_range[1], ", ", config$time_range[2], ").\nAvailable years: ",
+           rads::format_time(valid_years), ".")
+    }
+    if (length(dropped_years) > 0) {
+      message("\u2139\ufe0f ", config$data_params$function_name, " data are not available for: ",
+              rads::format_time(dropped_years), ". \nUsing: ", rads::format_time(years), ".")
+    }
   }
 
   # Identify CHI variables (if needed) ----
-  possiblecols <- rads::quiet(apde.data::list_data_columns(config$data_params$function_name)[]$var.names)
-
+  # Pass the requested years so survey datasets (HYS, BRFSS, PUMS) only list columns that exist in those years
+  possiblecols <- rads::quiet(apde.data::list_data_columns(config$data_params$function_name, year = years)[]$var.names)
 
   if(!config$data_params$time_var %in% possiblecols){
     stop("\U1F6D1\nThe variable specified in data_params$time_var is not available in this dataset.")
@@ -855,10 +933,14 @@ process_apde_data <- function(config) {
   # Use the appropriate apde.data::xxx function ----
   data_func <- utils::getFromNamespace(config$data_params$function_name, 'apde.data') # dynamically get the function without loading all of apde.data
 
-  dt <- data_func(year = config$time_range[1]:config$time_range[2],
-                  cols = unique(c(config$time_var, config$data_params$cols)),
-                  version = config$data_params$version,
-                  kingco = config$data_params$kingco)
+  data_args <- list(year = years,
+                    cols = unique(c(config$time_var, config$data_params$cols)),
+                    kingco = config$data_params$kingco)
+  if (has_version) {
+    data_args$version <- config$data_params$version # other apde.data functions have no `version` argument
+  }
+
+  dt <- do.call(data_func, data_args)
   config$data_params$data <- dt
 
   # Now process the data similarly to process_r_dataframe ----
@@ -944,8 +1026,8 @@ process_sql_server <- function(config) {
     categorical_freq[value == 'NULL', value := NA] # Change 'NULL' to true NA
   } else {categorical_freq <- data.table::data.table() } # empty data.table so rest of code will work
 
-  # Keep only top 8 most common / frequent categorical values (PLUS NA) ----
-    vals_categorical <- keep_top_8(categorical_freq = categorical_freq, config = config)
+  # Keep only top 10 most common categorical values in most recent period (PLUS NA) ----
+    vals_categorical <- keep_top_n(categorical_freq = categorical_freq, config = config, n = 10)
 
   # Comparison with CHI standards (if needed) ----
   if(isTRUE(config$data_params$check_chi)){
@@ -1039,29 +1121,58 @@ comp_2_chi_std <- function(myCHIcomparison, time_var){
 
 }
 
-## keep_top_8() ----
-#' Keep top 8 most frequent categorical values
+## keep_top_n() ----
+#' Keep the top n most frequent categorical values (plus NA)
 #'
-#' `used by process_sql_server()` & 'process_r_dataframe()'
+#' `used by process_sql_server()` & `process_r_dataframe()`
+#'
+#' For each variable, the top `n` non-missing values are identified using the
+#' counts from the most recent time period in which that variable has any
+#' non-missing data. That same set of values is then kept for every time
+#' period, so trends are complete and consistent across time. All other values
+#' are collapsed into 'Other values' and NA is always kept.
+#'
+#' Ties are broken by count (descending) and then alphabetically, so exactly
+#' `n` values are kept whenever at least `n` exist.
+#'
+#' @param categorical_freq data.table with columns for the time variable,
+#' `varname`, `value`, and `count`
+#' @param config qa_data_config object (needs `config$time_var`)
+#' @param n Number of most frequent non-missing values to keep. Default is 10.
 #'
 #' @keywords internal
 #' @noRd
 #'
 #'
-keep_top_8 <- function(categorical_freq, config){
+keep_top_n <- function(categorical_freq, config, n = 10){
   if(nrow(categorical_freq) > 0){
-    vals_frequent <- data.table::copy(categorical_freq)
-    vals_frequent <- vals_frequent[!is.na(value), rank := data.table::frankv(-count, ties.method = "dense"), by = c(config$time_var, 'varname')]
-    vals_frequent[is.na(value), rank := 0] # give NA rank of 0 to ensure that it is always selected along with top 8 most frequent
-    vals_frequent <- vals_frequent[rank %in% 0:8]
-    categorical_freq <- merge(categorical_freq,
-                              vals_frequent[, c(config$time_var, 'varname', 'value', 'rank'), with = F],
-                              by = c(config$time_var, 'varname', 'value'),
-                              all = TRUE)
-    categorical_freq[is.na(rank), value := 'Other values']
-    categorical_freq <- categorical_freq[, list(count = sum(count, na.rm = TRUE)), by = c(config$time_var, 'varname', 'value')]
-    categorical_freq[, proportion := count / sum(count), by = c(config$time_var, 'varname')]
-    return(categorical_freq)
+    time_var <- config$time_var
+    freq <- data.table::copy(categorical_freq) # avoid modifying original by reference
+
+    # Most recent time period with at least one non-NA value, per variable.
+    # Done per variable so questions asked in alternating years (or variables
+    # that are all NA in the final period) still get a meaningful ranking.
+    latest <- freq[!is.na(value) & count > 0,
+                   list(latest_period = max(get(time_var))),
+                   by = varname]
+
+    # Rank the non-NA values in that latest period by count, ties alphabetically
+    ranked <- merge(freq[!is.na(value)], latest, by = 'varname')
+    ranked <- ranked[get(time_var) == latest_period]
+    data.table::setorderv(ranked, c('varname', 'count', 'value'), c(1, -1, 1))
+    top_vals <- ranked[, list(value = utils::head(value, n)), by = varname]
+    top_vals[, keep_value := TRUE]
+
+    # Flag the top n values in ALL time periods, always keep NA, and relabel
+    # everything else as 'Other values'
+    freq <- merge(freq, top_vals, by = c('varname', 'value'), all.x = TRUE)
+    freq[is.na(value), keep_value := TRUE]
+    freq[is.na(keep_value), value := 'Other values']
+
+    # Re-aggregate (combines the 'Other values') and calculate proportions
+    freq <- freq[, list(count = sum(count, na.rm = TRUE)), by = c(time_var, 'varname', 'value')]
+    freq[, proportion := count / sum(count), by = c(time_var, 'varname')]
+    return(freq)
   } else { categorical_freq = data.table::data.table()}
 }
 
@@ -1823,6 +1934,11 @@ integer_year_breaks <- function(max_breaks = 10) {
 #'
 #' Used by `etl_qa_export_results()`
 #'
+#' To keep graphs and legends readable, only NA plus the 8 most common
+#' non-missing values in the most recent time period with data are plotted.
+#' When any values are dropped, a caption is added to the graph. The Excel
+#' output is NOT affected by this limit.
+#'
 #' @keywords internal
 #' @noRd
 #'
@@ -1830,6 +1946,31 @@ integer_year_breaks <- function(max_breaks = 10) {
 plotCATEGORICAL <- function(var_data, time_var, mytitle, time_range) {
   # Drop rows for years without data because some questions asked alternating years
   var_data <- var_data[, if(any(proportion != 0)) .SD, by = time_period]
+
+  # Limit graph to NA + the 8 most common values in the most recent period ----
+  # Candidates are real (non-NA) values
+  candidates <- var_data[!is.na(value) & value != 'Other values']
+  candidates_with_data <- candidates[count > 0]
+  if (nrow(candidates_with_data) > 0) {
+    latest_time <- max(candidates_with_data$time_period)
+    # Rank by count in the latest period, breaking ties alphabetically
+    ranked <- candidates_with_data[time_period == latest_time]
+    data.table::setorderv(ranked, c('count', 'value'), c(-1, 1))
+    top_values <- utils::head(ranked$value, 8)
+  } else {
+    top_values <- character(0)
+  }
+
+  # Caption only when something was dropped (extra values or 'Other values')
+  dropped_any <- length(setdiff(unique(stats::na.omit(var_data$value)), top_values)) > 0
+  mycaption <- if (dropped_any && length(top_values) > 0) {
+    paste0('Showing NA + the ', length(top_values), ' most common values in ', latest_time)
+  } else {
+    NULL
+  }
+
+  # Subsetting the data limits both the plotted lines AND the legend
+  var_data <- var_data[is.na(value) | value %in% top_values]
 
   value_levels <- levels(factor(var_data$value, exclude = NULL))
   linetypes <- rep("solid", length(value_levels))
@@ -1853,7 +1994,8 @@ plotCATEGORICAL <- function(var_data, time_var, mytitle, time_range) {
          subtitle = paste0('', var_data$varname[1]),
          x = time_var,
          y = 'Proportion',
-         color = 'Unique Values') +
+         color = 'Unique Values',
+         caption = mycaption) + # NULL (no caption) unless values were dropped
     ggplot2::theme_bw() +
     ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5),
           plot.subtitle = ggplot2::element_text(hjust = 0.5, face = 'bold', size = 16)) +

@@ -4,7 +4,7 @@ source("tests/manual/helper.R")
 
 test_that("add_index creates and drops indices correctly", {
   # Setup
-  conn <- create_db_connection("hhsaw", prod = FALSE)
+  conn <- apde.connect::connect(database = "hhsaw", prod = FALSE)
   schema <- get_test_schema()
   table_name <- "test_index_table"
 

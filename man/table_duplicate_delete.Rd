@@ -37,7 +37,7 @@ This function replaces the deprecated \code{table_duplicate_delete_f()} function
 \examples{
  \dontrun{
   # Setup connection
-  conn <- create_db_connection("my_server", prod = FALSE)
+  conn <- apde.connect::connect(database = "hhsaw", prod = FALSE)
 
   # Delete tables with default suffix
   table_duplicate_delete(conn)

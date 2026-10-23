@@ -1,6 +1,6 @@
 Package: apde.etl
 Title: APDE Tools for ETL (Extract, Transform, & Load) Procesess
-Version: 2.4.1
+Version: 2.5.0
 Authors@R: 
     person("Danny", "Colombara", , "dcolombara@kingcounty.gov", role = c("aut", "cre"))
 Description: Provides tools for ETL and informatics processes.
@@ -10,18 +10,18 @@ LazyData: true
 LazyDataCompression: xz
 Roxygen: list(markdown = TRUE)
 Imports: 
+    apde.connect,
     apde.data,
     blastula, 
     configr,
     data.table,
     DBI,
-    dplyr,
     ggplot2,
     glue,
     httr,
     keyring, 
     knitr, 
-    odbc,
+    lifecycle,
     openxlsx, 
     rads, 
     RODBC,
@@ -32,12 +32,13 @@ Imports:
     sys,
     yaml
 Remotes:
+    github::PHSKC-APDE/apde.connect, 
     github::PHSKC-APDE/rads.data, 
     github::PHSKC-APDE/rads, 
     github::PHSKC-APDE/apde.data 
 Suggests: 
-    devtools,
     mockery,
+    pak,
     quarto,
     testthat
 Depends: 

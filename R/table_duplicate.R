@@ -86,8 +86,8 @@
 #'   # Note: Requires BCP utility installation and proper database connections
 #'
 #'   # Setup connections
-#'   conn_from <- create_db_connection("source_server", prod = FALSE)
-#'   conn_to <- create_db_connection("dest_server", prod = FALSE)
+#'   conn_from <- apde.connect::connect(database = "hhsaw", prod = FALSE)
+#'   conn_to <- apde.connect::connect(database = "hhsaw", prod = TRUE)
 #'
 #'   # Example 1: Simple single table duplication
 #'   table_duplicate(conn_from = conn_from,
@@ -239,7 +239,14 @@ table_duplicate <- function(conn_from,
         if(nrow(data_to) == 0) {
           table_match <- FALSE
         } else {
-          suppressWarnings(table_match <- dplyr::all_equal(data_from, data_to, ignore_col_order = FALSE))
+          # match = same column names, order, & types, and exactly the same rows (in any order)
+          table_match <- identical(lapply(data_from, class), lapply(data_to, class)) &&
+            isTRUE(all.equal(data.table::as.data.table(data_from),
+                             data.table::as.data.table(data_to),
+                             ignore.row.order = TRUE,
+                             ignore.col.order = FALSE,
+                             check.attributes = FALSE,
+                             tolerance = 0)) # exact match, i.e., no rounding tolerance
         }
         if(table_match == TRUE) {
           message("Destination table matches source table...")
@@ -315,7 +322,7 @@ table_duplicate <- function(conn_from,
 
       DBI::dbExecute(conn_to, create_code)
       message("Copying source data to destination table...")
-      data_from <- dplyr::mutate_all(data_from, as.character)
+      data_from[] <- lapply(data_from, as.character) # convert every column to character
       if(length(keyring::key_list(server_to)[["username"]]) == 0) {
         u <- NULL
         p <- NULL
@@ -448,7 +455,7 @@ table_duplicate <- function(conn_from,
 #' @examples
 #'  \dontrun{
 #'   # Setup connection
-#'   conn <- create_db_connection("my_server", prod = FALSE)
+#'   conn <- apde.connect::connect(database = "hhsaw", prod = FALSE)
 #'
 #'   # Delete tables with default suffix
 #'   table_duplicate_delete(conn)

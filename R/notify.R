@@ -59,7 +59,6 @@ apde_notify <- function(msg_id = NULL,
     apde_notify_set_cred()
   }
 
-  conn <- create_db_connection("hhsaw", interactive = F, prod = T)
   if(is.null(msg_id)) {
     msg_id <- apde_notify_msg_id_get(msg_name = msg_name)
   }
@@ -128,7 +127,6 @@ apde_notify <- function(msg_id = NULL,
 #'  }
 #'
 apde_notify_menu <- function() {
-  conn <- create_db_connection("hhsaw", interactive = F, prod = T)
   address_list <- apde_notify_addresses_get()
   current_list <- c()
 
@@ -370,7 +368,8 @@ apde_notify_set_cred <- function() {
 #'   addresses <- apde_notify_addresses_get()
 #'  }
 apde_notify_addresses_get <- function() {
-  conn <- create_db_connection("hhsaw", interactive = F, prod = T)
+  conn <- apde.connect::connect(database = "hhsaw")
+  on.exit(DBI::dbDisconnect(conn), add = TRUE)
   addresses <- DBI::dbGetQuery(conn, "SELECT *
                                FROM [apde].[notify_addresses]
                                ORDER BY [address] ASC")
@@ -400,7 +399,8 @@ apde_notify_addresses_get <- function() {
 #'  }
 apde_notify_address_get <- function(address_id = NULL,
                                       address = NULL) {
-  conn <- create_db_connection("hhsaw", interactive = F, prod = T)
+  conn <- apde.connect::connect(database = "hhsaw")
+  on.exit(DBI::dbDisconnect(conn), add = TRUE)
   address_id <- apde_notify_address_id_get(address_id = address_id,
                                              address = address)
   if(is.null(address_id)) {
@@ -439,7 +439,8 @@ apde_notify_address_get <- function(address_id = NULL,
 apde_notify_address_set <- function(address_id = NULL,
                                       address = NULL,
                                       new_address) {
-  conn <- create_db_connection("hhsaw", interactive = F, prod = T)
+  conn <- apde.connect::connect(database = "hhsaw")
+  on.exit(DBI::dbDisconnect(conn), add = TRUE)
   address_id <- apde_notify_address_id_get(address_id = address_id,
                                              address = address)
   if(is.null(address_id)) {
@@ -475,7 +476,8 @@ apde_notify_address_set <- function(address_id = NULL,
 #'   new_id <- apde_notify_address_create(address = "user@kingcounty.gov")
 #'  }
 apde_notify_address_create <- function(address) {
-  conn <- create_db_connection("hhsaw", interactive = F, prod = T)
+  conn <- apde.connect::connect(database = "hhsaw")
+  on.exit(DBI::dbDisconnect(conn), add = TRUE)
   address_id <- apde_notify_address_id_get(address = address)
   if(length(address_id) > 0) {
     stop("Address already exists.")
@@ -512,7 +514,8 @@ apde_notify_address_create <- function(address) {
 #'  }
 apde_notify_address_delete <- function(address_id = NULL,
                                          address = NULL) {
-  conn <- create_db_connection("hhsaw", interactive = F, prod = T)
+  conn <- apde.connect::connect(database = "hhsaw")
+  on.exit(DBI::dbDisconnect(conn), add = TRUE)
   address_id <- apde_notify_address_id_get(address_id = address_id,
                                              address = address)
   if(is.null(address_id)) {
@@ -551,7 +554,6 @@ apde_notify_address_delete <- function(address_id = NULL,
 #'  }
 apde_notify_address_id_get <- function(address_id = NULL,
                                          address = NULL) {
-  conn <- create_db_connection("hhsaw", interactive = F, prod = T)
   addresses <- apde_notify_addresses_get()
   if(is.null(address_id)) {
     address_id <- addresses[addresses$address == address, ]$id
@@ -587,7 +589,8 @@ apde_notify_address_id_get <- function(address_id = NULL,
 #'  }
 apde_notify_list_get <- function(msg_id = NULL,
                                    msg_name = NULL) {
-  conn <- create_db_connection("hhsaw", interactive = F, prod = T)
+  conn <- apde.connect::connect(database = "hhsaw")
+  on.exit(DBI::dbDisconnect(conn), add = TRUE)
   msg_id <- apde_notify_msg_id_get(msg_id = msg_id,
                                      msg_name = msg_name)
   if(is.null(msg_id)) {
@@ -629,7 +632,8 @@ apde_notify_list_get <- function(msg_id = NULL,
 apde_notify_list_set <- function(msg_id = NULL,
                                    msg_name = NULL,
                                    choices) {
-  conn <- create_db_connection("hhsaw", interactive = F, prod = T)
+  conn <- apde.connect::connect(database = "hhsaw")
+  on.exit(DBI::dbDisconnect(conn), add = TRUE)
   msg_id <- apde_notify_msg_id_get(msg_id = msg_id,
                                      msg_name = msg_name)
   if(is.null(msg_id)) {
@@ -643,7 +647,7 @@ apde_notify_list_set <- function(msg_id = NULL,
   if(length(choices) > 0) {
     choices <- as.data.frame(choices)
     colnames(choices) <- c("address")
-    choices <- dplyr::inner_join(choices, address_list)
+    choices <- merge(choices, address_list, by = "address") # inner join to get the address ids
     for(i in 1:nrow(choices)) {
       DBI::dbExecute(conn,
                      glue::glue_sql("INSERT INTO [apde].[notify_list]
@@ -674,7 +678,8 @@ apde_notify_list_set <- function(msg_id = NULL,
 #'   messages <- apde_notify_msgs_get()
 #'  }
 apde_notify_msgs_get <- function() {
-  conn <- create_db_connection("hhsaw", interactive = F, prod = T)
+  conn <- apde.connect::connect(database = "hhsaw")
+  on.exit(DBI::dbDisconnect(conn), add = TRUE)
   msgs <- DBI::dbGetQuery(conn,
                           "SELECT *
                           FROM [apde].[notify_msgs]
@@ -706,7 +711,6 @@ apde_notify_msgs_get <- function() {
 #'  }
 apde_notify_msg_id_get <- function(msg_id = NULL,
                                      msg_name = NULL) {
-  conn <- create_db_connection("hhsaw", interactive = F, prod = T)
   msgs <- apde_notify_msgs_get()
   if(is.null(msg_id)) {
     msg_id <- msgs[msgs$msg_name == msg_name, ]$id
@@ -747,7 +751,8 @@ apde_notify_msg_id_get <- function(msg_id = NULL,
 #'  }
 apde_notify_msg_get <- function(msg_id = NULL,
                                   msg_name = NULL) {
-  conn <- create_db_connection("hhsaw", interactive = F, prod = T)
+  conn <- apde.connect::connect(database = "hhsaw")
+  on.exit(DBI::dbDisconnect(conn), add = TRUE)
   if(is.null(msg_id)) {
     msg_id <- apde_notify_msg_id_get(msg_name = msg_name)
   }
@@ -802,7 +807,8 @@ apde_notify_msg_set <- function(msg_id = 0,
                                   msg_subject,
                                   msg_body,
                                   msg_from) {
-  conn <- create_db_connection("hhsaw", interactive = F, prod = T)
+  conn <- apde.connect::connect(database = "hhsaw")
+  on.exit(DBI::dbDisconnect(conn), add = TRUE)
   if(msg_id > 0) {
     msg <- apde_notify_msg_get(msg_id)
     if(msg$msg_name == msg_name & msg$msg_subject == msg_subject &

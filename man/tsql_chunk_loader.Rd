@@ -83,7 +83,7 @@ Ported from the \code{rads} package. It has been migrated here in preparation fo
 
  tsql_chunk_loader(
    ph.data = mydt,
-   db_conn = apde.data::authenticate_hhsaw(), # connect to Azure 16
+   db_conn = apde.connect::connect(), # connect to Azure 16
    chunk_size = 3333,
    schema_name = Sys.getenv("USERNAME"),
    table_name = 'JustTesting',

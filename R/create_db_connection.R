@@ -4,107 +4,84 @@
 #' @author Kai Fukutaki
 #'
 #' @description
-#' Create a connection to APDE prod or dev servers
+#' `r lifecycle::badge("deprecated")`
+#'
+#' `create_db_connection()` was deprecated in apde.etl 2.5.0. Please use
+#' [apde.connect::connect()] instead.
+#'
+#' Create a connection to APDE prod or dev servers. While deprecated, this
+#' function continues to work, but it uses [apde.connect::connect()] under the
+#' hood. It always tries Windows integrated authentication first and then falls
+#' back to the credentials stored in the `'hhsaw'` `keyring::` service. The
+#' `interactive` argument is ignored.
 #'
 #' @note
 #' This function replaces the deprecated `create_db_connection` function from the
 #' `apde` package.
 #'
 #' @param server Whether we are connecting to `'hhsaw'`, `'inthealth'`,
-#' or `'phextractstore'`
+#' or `'phextractstore'`. Note that `'inthealth'` connects to the
+#' `inthealth_edw` database.
 #' @param prod Whether the production or dev/WIP servers are to be used. Defaults
 #' to `prod = TRUE`.
-#' @param interactive Whether to input password manually for HHSAW/inthealth or
-#' to use keyring. `TRUE` should be used when connecting on VM, typically,
-#' or if keyring/odbc are not set up yet for a given server. Defaults to
-#' `interactive = FALSE`.
+#' @param interactive **Ignored.** Kept only so that existing code does not
+#' break. `interactive = TRUE` used to request `ActiveDirectoryInteractive`
+#' (pop-up) authentication, which is no longer supported. Now, regardless of
+#' this value, the function uses Windows integrated authentication followed by
+#' `keyring::` credentials (i.e., `apde.connect::connect(auth = 'auto')`).
+#' Defaults to `interactive = FALSE`.
+#'
+#' @details
+#' **Switching to `apde.connect::connect()`:**
+#'
+#' | **Old code**                                                  | **New code**                                                      |
+#' |---------------------------------------------------------------|-------------------------------------------------------------------|
+#' | `create_db_connection(server = 'hhsaw')`                      | `apde.connect::connect(database = 'hhsaw')`                        |
+#' | `create_db_connection(server = 'inthealth')`                  | `apde.connect::connect(database = 'inthealth_edw')`                |
+#' | `create_db_connection(server = 'phextractstore')`             | `apde.connect::connect(database = 'phextractstore')`               |
+#' | `create_db_connection(server = 'hhsaw', prod = FALSE)`        | `apde.connect::connect(database = 'hhsaw', prod = FALSE)`          |
 #'
 #' @return A database connection object
 #'
 #' @examples
 #' \dontrun{
+#' # Deprecated. Please use apde.connect::connect() instead.
+#'
 #' # Connect to production HHSAW
 #' conn <- create_db_connection(server = "hhsaw", prod = TRUE)
 #'
 #' # Connect to development inthealth server
 #' conn <- create_db_connection(server = "inthealth", prod = FALSE)
-#'
-#' # Connect to phextractstore with interactive authentication
-#' conn <- create_db_connection(server = "phextractstore", interactive = TRUE)
 #' }
 #'
 #' @export
 #'
-
-
-#### FUNCTION ####
 create_db_connection <- function(server = c("phextractstore", "hhsaw", "inthealth"),
                                  prod = TRUE,
                                  interactive = FALSE) {
 
+  lifecycle::deprecate_warn(
+    when = "2.5.0",
+    what = "create_db_connection()",
+    with = "apde.connect::connect()",
+    details = "create_db_connection() still works but now calls apde.connect::connect() under the hood. See ?create_db_connection for how to update your code."
+  )
+
   # validate arguments ----
   server <- match.arg(server)
 
-  if (!is.logical(prod)) {
+  if (!is.logical(prod) || length(prod) != 1 || is.na(prod)) {
     stop("'prod' must be a logical value (TRUE/FALSE)")
   }
 
-  if (!is.logical(interactive)) {
-    stop("'interactive' must be a logical value (TRUE/FALSE)")
-  }
+  # `interactive` is intentionally ignored (see @param interactive)
 
-  # identify databases and servers ----
-  if (server == "hhsaw") {
-    db_name <- "hhs_analytics_workspace"
-  } else if (server == "inthealth") {
-    db_name <- "inthealth_edw"
-  }
+  # connect via apde.connect ----
+  database <- switch(server,
+                     hhsaw = "hhsaw",
+                     inthealth = "inthealth_edw",
+                     phextractstore = "phextractstore")
 
-  if (prod == T & server %in% c("hhsaw", "inthealth")) {
-    server_name <- "tcp:kcitazrhpasqlprp16.database.windows.net,1433"
-  } else {
-    server_name <- "tcp:kcitazrhpasqldev20.database.windows.net,1433"
-  }
-
-  # connect to databases ----
-  if (server == "phextractstore") {
-    if (prod == T) {
-      conn <- DBI::dbConnect(odbc::odbc(),
-                              Driver = getOption('apde.etl.odbc_version'),
-                              Server = "KCITSQLPRPHIP40",
-                              Database = "PHExtractStore",
-                              Encrypt = "yes",
-                              Authentication = "ActiveDirectoryIntegrated",
-                              TrustServerCertificate = 'yes' #Not ideal, but probably fine since its on prem
-                             )
-    } else {
-      conn <- DBI::dbConnect(odbc::odbc(),
-                              Driver = getOption('apde.etl.odbc_version'),
-                              Server = "KCITSQLUATHIP40",
-                              Database = "PHExtractStore",
-                              Encrypt = "yes",
-                              Authentication = "ActiveDirectoryIntegrated",
-                              TrustServerCertificate = 'yes' #Not ideal, but probably fine since its on prem
-                             )
-    }
-  } else if (interactive == F) {
-    conn <- DBI::dbConnect(odbc::odbc(),
-                           driver = getOption('apde.etl.odbc_version'),
-                           server = server_name,
-                           database = db_name,
-                           Encrypt = "yes",
-                           Authentication = "ActiveDirectoryIntegrated")
-  } else if (interactive == T) {
-    conn <- DBI::dbConnect(odbc::odbc(),
-                           driver = getOption('apde.etl.odbc_version'),
-                           server = server_name,
-                           database = db_name,
-                           uid = keyring::key_list("hhsaw")[["username"]],
-                           Encrypt = "yes",
-
-                           Authentication = "ActiveDirectoryInteractive")
-  }
-
-  # return connection ----
-  return(conn)
+  # 'auto' = Windows integrated authentication, then keyring fallback
+  apde.connect::connect(database = database, prod = prod, auth = "auto")
 }

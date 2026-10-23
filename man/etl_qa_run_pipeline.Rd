@@ -32,8 +32,14 @@ will assess whether their values align with standards in
 \code{chi_standard_varnames}. Default is \code{FALSE}
 \item \code{cols}: Character vector specifying the column names to analyze,
 e.g., \code{cols = c('race4', 'birth_weight_grams', 'birthplace_city')}
-\item \code{time_range}: Character vector of length 2 specifying the start
-and end of the time range, e.g., \code{time_range = c(2015, 2024)}
+\item \code{time_range}: Numeric vector of length 2 specifying the start
+and end of the time range, e.g., \code{time_range = c(2015, 2024)}.
+When \code{data_source_type = 'apde.data'}, years in the range that have
+no data (e.g., HYS off-years) are dropped with a message. For
+\code{function_name = 'pums'}, \code{time_range} must cover either one year
+(e.g., \code{c(2022, 2022)}) or exactly five consecutive years (e.g.,
+\code{c(2018, 2022)}), because each maps to one PUMS release, and years
+are not filtered
 \item \code{time_var}: Character string specifying the time interval variable,
 e.g., \code{time_var = 'chi_year'}
 \item \code{data}: Name of a data.frame or data.table that you want to assess
@@ -41,14 +47,25 @@ with this function, e.g., \code{data = myDataTable}. \emph{Required only when
 \code{data_source_type = 'r_dataframe'}}.
 \item \code{function_name}: Character string specifying the relevant
 \code{apde.data::xxx} function, e.g., \code{function_name = 'birth'}, which
-fetches birth data.
+fetches birth data with \code{apde.data::birth()}. Options are the datasets
+listed by \code{apde.data::list_data()}, except \code{'population'}.
 \emph{Required only when \code{data_source_type = 'apde.data'}}
 \item \code{kingco}: Logical vector of length 1. Identifies whether you want
 limit the data to King County. \emph{Required only when
 \code{data_source_type = 'apde.data'}}. Default is \code{kingco = TRUE}
-\item \code{version}: Character string specifying either \code{'final'} or
-\code{'stage'}. \emph{Required only when \code{data_source_type = 'apde.data'}}.
-Default is \code{version = 'stage'}
+\item \code{version}: Character string specifying the version of the data.
+\emph{Used only when \code{data_source_type = 'apde.data'} and \code{function_name}
+is \code{'birth'}, \code{'brfss'}, or \code{'hys'}} (the only \code{apde.data} functions
+with a \code{version} argument):
+\itemize{
+\item \code{'birth'} & \code{'brfss'}: either \code{'stage'} or \code{'final'}. Default is
+\code{version = 'stage'}
+\item \code{'hys'}: the name of a HYS release, e.g., \code{'dev2025'}. Default is
+\code{version = 'best'}.
+}
+
+For all other \code{function_name} values, \code{version} is ignored with a
+message
 \item \code{schema_table}: The name of the schema and table to be accessed
 within the SQL Server \code{connection}. Must be in the form
 \code{myschema.mytable}, with a period as a separator.
@@ -96,6 +113,15 @@ The function provides identical output whether using \code{apde.data}, providing
 data.table that is in R's memory, or processing data directly on MS SQL Server.
 The key is to correctly set up the arguments. Please refer to the examples
 below for models that you should follow.
+
+\strong{Categorical variables:} For each categorical variable, the 10 most common
+non-missing values are identified using the most recent time period in which
+that variable has data. Those same 10 values (plus \code{NA}) are reported for
+every time period in the Excel output, so trends are complete over time. All
+remaining values are combined into \code{'Other values'}. To keep them readable,
+the PDF graphs show only \code{NA} plus the 8 most common of these values and
+never show \code{'Other values'}. When values are left off a graph, a caption
+notes this.
 }
 \note{
 This function replaces the deprecated \code{etl_qa_run_pipeline} function from the
@@ -147,7 +173,7 @@ qa.df <- etl_qa_run_pipeline(
 
 # Example with SQL Server
 library(DBI)
-myconnection <- apde.data::authenticate_hhsaw()
+myconnection <- apde.connect::connect()
 qa.sql <- etl_qa_run_pipeline(
   data_source_type = 'sql_server',
   connection = myconnection,
