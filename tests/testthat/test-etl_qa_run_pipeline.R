@@ -1,10 +1,11 @@
-# etl_qa_apde_data_functions() ----
-test_that("etl_qa_apde_data_functions lists valid apde.data functions", {
-  fns <- etl_qa_apde_data_functions()
+# etl_qa_supported_datasets() ----
+test_that("etl_qa_supported_datasets lists valid apde.data functions", {
+  fns <- etl_qa_supported_datasets()
 
   expect_true(all(c('birth', 'brfss', 'chars', 'death', 'infant_death') %in% fns$all))
   expect_false('population' %in% fns$all)
-  expect_setequal(fns$versioned, c('birth', 'brfss'))
+  expect_setequal(fns$versioned, c('birth', 'brfss', 'hys'))
+  expect_identical(fns$version_defaults, c(birth = 'stage', brfss = 'stage', hys = 'best'))
   expect_true(all(fns$versioned %in% fns$all))
 
   # every valid function_name must be an actual apde.data function with the arguments the pipeline uses
@@ -13,10 +14,36 @@ test_that("etl_qa_apde_data_functions lists valid apde.data functions", {
     expect_true(all(c('cols', 'year', 'kingco') %in% args), info = fn)
   }
 
-  # and only the 'versioned' functions should have a version argument that is stage / final
-  for (fn in fns$versioned) {
-    expect_true('version' %in% names(formals(utils::getFromNamespace(fn, 'apde.data'))), info = fn)
-  }
+  # 'versioned' must be exactly the apde.data functions that have a version argument
+  # complicated!!! figured out by an AI.
+  has_version_arg <- Filter(function(fn) 'version' %in% names(formals(utils::getFromNamespace(fn, 'apde.data'))), fns$all)
+  expect_setequal(fns$versioned, has_version_arg)
+})
+
+# etl_qa_resolve_version() ----
+test_that("etl_qa_resolve_version sets defaults, validates, & ignores version where it does not apply", {
+  # defaults
+  expect_message(expect_identical(etl_qa_resolve_version('birth', NULL), 'stage'), "Defaulting to 'stage'")
+  expect_message(expect_identical(etl_qa_resolve_version('brfss', NULL), 'stage'), "Defaulting to 'stage'")
+  expect_message(expect_identical(etl_qa_resolve_version('hys', NULL), 'best'), "Defaulting to 'best'")
+
+  # user supplied values are kept (HYS releases are validated later by apde.data::list_data_years())
+  expect_identical(etl_qa_resolve_version('birth', 'final'), 'final')
+  expect_identical(etl_qa_resolve_version('hys', 'dev2025'), 'dev2025')
+
+  # birth & brfss only allow stage / final
+  expect_error(etl_qa_resolve_version('birth', 'best'), "must be either 'stage' or 'final'")
+  expect_error(etl_qa_resolve_version('brfss', 'pizza'), "must be either 'stage' or 'final'")
+
+  # version must be a single string
+  expect_error(etl_qa_resolve_version('hys', c('best', 'dev2025')), "must be a single character string")
+  expect_error(etl_qa_resolve_version('hys', 2025), "must be a single character string")
+  expect_error(etl_qa_resolve_version('hys', NA_character_), "must be a single character string")
+
+  # functions without a version argument: ignored with a warning-emoji message
+  expect_message(expect_null(etl_qa_resolve_version('chars', 'final')), "does not have a `version` argument")
+  expect_message(expect_null(etl_qa_resolve_version('death', 'pizza')), "^⚠")
+  expect_silent(expect_null(etl_qa_resolve_version('chars', NULL)))
 })
 
 # etl_qa_setup_config() ----
@@ -27,9 +54,18 @@ test_that("etl_qa_setup_config only keeps `version` for apde.data functions that
                                    data_params = c(params, function_name = 'birth'))
   expect_equal(cfg_birth$data_params$version, 'final')
 
-  cfg_chars <- etl_qa_setup_config(data_source_type = 'apde.data', output_directory = tempdir(),
-                                   data_params = c(params, function_name = 'chars'))
+  expect_message(
+    cfg_chars <- etl_qa_setup_config(data_source_type = 'apde.data', output_directory = tempdir(),
+                                     data_params = c(params, function_name = 'chars')),
+    "is being ignored"
+  )
   expect_null(cfg_chars$data_params$version)
+
+  # hys keeps its release name
+  cfg_hys <- etl_qa_setup_config(data_source_type = 'apde.data', output_directory = tempdir(),
+                                 data_params = c(params[c('time_var', 'time_range', 'cols')],
+                                                 function_name = 'hys', version = 'dev2025'))
+  expect_equal(cfg_hys$data_params$version, 'dev2025')
 })
 
 test_that("etl_qa_setup_config validates function_name", {
@@ -171,6 +207,47 @@ test_that("process_apde_data drops HYS years that have no data", {
 
   # a range with no HYS years at all gives a clear error
   expect_error(process_apde_data(make_config(c(2020, 2020))), "No hys data are available")
+})
+
+test_that("process_apde_data passes the HYS release to list_data_years() & hys()", {
+  captured <- NULL
+  captured_years_args <- NULL
+
+  local_mocked_bindings(
+    list_data_columns = function(...) data.table::data.table(var.names = c('chi_year', 'chi_sex', 'chi_geo_kc')),
+    list_data_years = function(dataset, version = NULL, ...) {
+      captured_years_args <<- list(dataset = dataset, version = version)
+      if (!version %in% c('best', 'dev2025')) stop("Invalid `version` parameter value: ", version)
+      c(2023L, 2025L)
+    },
+    hys = function(...) {
+      captured <<- list(...)
+      stop("stop after capturing arguments")
+    },
+    .package = 'apde.data'
+  )
+
+  make_config <- function(version = NULL) {
+    params <- list(function_name = 'hys', time_var = 'chi_year', time_range = c(2023, 2025),
+                   cols = 'chi_sex', kingco = FALSE, check_chi = FALSE)
+    params$version <- version
+    suppressMessages(etl_qa_setup_config(data_source_type = 'apde.data', output_directory = tempdir(),
+                                         data_params = params))
+  }
+
+  # a non-default release is used for both the years & the data
+  expect_error(suppressMessages(process_apde_data(make_config('dev2025'))), "stop after capturing")
+  expect_equal(captured_years_args$version, 'dev2025')
+  expect_equal(captured$version, 'dev2025')
+
+  # default release is 'best'
+  expect_error(suppressMessages(process_apde_data(make_config())), "stop after capturing")
+  expect_equal(captured$version, 'best')
+
+  # an invalid release stops before any data are pulled
+  captured <- NULL
+  expect_error(suppressMessages(process_apde_data(make_config('pizza'))), "Invalid `version`")
+  expect_null(captured)
 })
 
 test_that("process_apde_data does not filter PUMS years", {

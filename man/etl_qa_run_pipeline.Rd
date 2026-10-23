@@ -53,11 +53,19 @@ listed by \code{apde.data::list_data()}, except \code{'population'}.
 \item \code{kingco}: Logical vector of length 1. Identifies whether you want
 limit the data to King County. \emph{Required only when
 \code{data_source_type = 'apde.data'}}. Default is \code{kingco = TRUE}
-\item \code{version}: Character string specifying either \code{'final'} or
-\code{'stage'}. \emph{Used only when \code{data_source_type = 'apde.data'} and
-\code{function_name} is \code{'birth'} or \code{'brfss'}} (the only \code{apde.data}
-functions with stage and final options). It is ignored for all other
-\code{function_name} values. Default is \code{version = 'stage'}
+\item \code{version}: Character string specifying the version of the data.
+\emph{Used only when \code{data_source_type = 'apde.data'} and \code{function_name}
+is \code{'birth'}, \code{'brfss'}, or \code{'hys'}} (the only \code{apde.data} functions
+with a \code{version} argument):
+\itemize{
+\item \code{'birth'} & \code{'brfss'}: either \code{'stage'} or \code{'final'}. Default is
+\code{version = 'stage'}
+\item \code{'hys'}: the name of a HYS release, e.g., \code{'dev2025'}. Default is
+\code{version = 'best'}.
+}
+
+For all other \code{function_name} values, \code{version} is ignored with a
+message
 \item \code{schema_table}: The name of the schema and table to be accessed
 within the SQL Server \code{connection}. Must be in the form
 \code{myschema.mytable}, with a period as a separator.

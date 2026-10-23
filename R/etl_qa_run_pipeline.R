@@ -52,11 +52,17 @@
 #'   limit the data to King County. *Required only when
 #'   `data_source_type = 'apde.data'`*. Default is `kingco = TRUE`
 #'
-#' - `version`: Character string specifying either `'final'` or
-#'   `'stage'`. *Used only when `data_source_type = 'apde.data'` and
-#'   `function_name` is `'birth'` or `'brfss'`* (the only `apde.data`
-#'   functions with stage and final options). It is ignored for all other
-#'   `function_name` values. Default is `version = 'stage'`
+#' - `version`: Character string specifying the version of the data.
+#'   *Used only when `data_source_type = 'apde.data'` and `function_name`
+#'   is `'birth'`, `'brfss'`, or `'hys'`* (the only `apde.data` functions
+#'   with a `version` argument):
+#'   - `'birth'` & `'brfss'`: either `'stage'` or `'final'`. Default is
+#'     `version = 'stage'`
+#'   - `'hys'`: the name of a HYS release, e.g., `'dev2025'`. Default is
+#'     `version = 'best'`.
+#'
+#'   For all other `function_name` values, `version` is ignored with a
+#'   message
 #'
 #' - `schema_table`: The name of the schema and table to be accessed
 #'   within the SQL Server `connection`. Must be in the form
@@ -256,11 +262,11 @@ etl_qa_run_pipeline <- function(connection = NULL,
   ### data_params$function_name ----
   if (data_source_type == 'apde.data' && !'function_name' %in% names(data_params)) {
     stop("\U0001f47f\nWhen `data_source_type = 'apde.data'`, data_params must include a 'function_name'. Options are limited to:\n",
-         paste0(etl_qa_apde_data_functions()$all, collapse = ', '), ".")
+         paste0(etl_qa_supported_datasets()$all, collapse = ', '), ".")
   } else if (data_source_type == 'apde.data' &&
-             !isTRUE(data_params$function_name %in% etl_qa_apde_data_functions()$all)){
+             !isTRUE(data_params$function_name %in% etl_qa_supported_datasets()$all)){
     stop("\U0001f47f\nThe data_params$function_name you provided is invalid. Available options are limited to:\n",
-         paste0(etl_qa_apde_data_functions()$all, collapse = ', '), ".")
+         paste0(etl_qa_supported_datasets()$all, collapse = ', '), ".")
   }
 
   ### data_params$kingco ----
@@ -274,15 +280,9 @@ etl_qa_run_pipeline <- function(connection = NULL,
     }
 
   ### data_params$version ----
-    # only birth() & brfss() have stage / final versions; ignored for other apde.data functions
-    if (data_source_type == 'apde.data' &&
-        data_params$function_name %in% etl_qa_apde_data_functions()$versioned) {
-      if (!'version' %in% names(data_params)) {
-        message("data_params$version not provided. Defaulting to 'stage'.")
-        data_params$version <- 'stage'
-      } else if (!(data_params$version %in% c('stage', 'final'))) {
-        stop("\U0001f47f\nInvalid value for data_params$version. It must be either 'stage' or 'final'.")
-      }
+    # only birth(), brfss(), & hys() have a version argument; ignored for other apde.data functions
+    if (data_source_type == 'apde.data') {
+      data_params$version <- etl_qa_resolve_version(data_params$function_name, data_params$version)
     }
 
   ### data_params$schema_table ----
@@ -521,17 +521,13 @@ etl_qa_setup_config <- function(data_source_type,
     if (!'function_name' %in% names(data_params)) {
       stop("\U0001f47f\nFor 'apde.data' type, data_params must include a 'function_name'")
     }
-    if (!isTRUE(data_params$function_name %in% etl_qa_apde_data_functions()$all)){
+    if (!isTRUE(data_params$function_name %in% etl_qa_supported_datasets()$all)){
       stop("\U0001f47f\nWhen `data_source_type = 'apde.data'`, data_params must include a valid 'function_name'. Options are limited to:\n",
-           paste0(etl_qa_apde_data_functions()$all, collapse = ', '), ".")
+           paste0(etl_qa_supported_datasets()$all, collapse = ', '), ".")
     }
     # Add 'kingco' (and 'version', where it applies) only for 'apde.data' type
     if (is.null(config$data_params$kingco)) config$data_params$kingco <- TRUE
-    if (data_params$function_name %in% etl_qa_apde_data_functions()$versioned) {
-      if (is.null(config$data_params$version)) config$data_params$version <- 'stage'
-    } else {
-      config$data_params$version <- NULL # ignored because this apde.data function has no stage / final versions
-    }
+    config$data_params$version <- etl_qa_resolve_version(data_params$function_name, config$data_params$version)
 
     config$process_location <- 'r'
   }
@@ -800,23 +796,76 @@ process_r_dataframe <- function(config) {
        chi_standards = chi_std_comparison)
 }
 
-# etl_qa_apde_data_functions() - apde.data functions usable by the ETL QA pipeline ----
+# etl_qa_supported_datasets() - apde.data functions usable by the ETL QA pipeline ----
 #' apde.data functions that can be used with `data_source_type = 'apde.data'`
 #'
 #' @return A list with two character vectors:
 #' - `all`: every valid `data_params$function_name`, i.e., the datasets in
 #'   `apde.data::list_data()` except `'population'` (which does not have the
 #'   `cols`, `year`, & `kingco` arguments the pipeline needs)
-#' - `versioned`: the subset that accept `version = 'stage'` or `'final'`
+#' - `versioned`: the subset that have a `version` argument
+#' - `version_defaults`: named vector of the default `version` for each
+#'   function in `versioned`
 #'
 #' @keywords internal
 #' @noRd
 #'
-etl_qa_apde_data_functions <- function() {
+etl_qa_supported_datasets <- function() {
+  version_defaults <- c(birth = 'stage',
+                        brfss = 'stage',
+                        hys = 'best')
   list(
     all = setdiff(apde.data::list_data(), 'population'),
-    versioned = c('birth', 'brfss')
+    versioned = names(version_defaults),
+    version_defaults = version_defaults
   )
+}
+
+# etl_qa_resolve_version() - default & validate data_params$version ----
+#' Default and validate `data_params$version` for `data_source_type = 'apde.data'`
+#'
+#' - Functions without a `version` argument: `version` is ignored
+#'   with a message and `NULL` is returned.
+#' - birth & brfss: defaults to `'stage'` and must be `'stage'` or `'final'`.
+#' - hys: defaults to `'best'` and must be a single character string. Valid
+#'   HYS releases are validated by `apde.data::list_data_years()` rather than here.
+#'
+#' @param function_name Name of the apde.data function, e.g., `'birth'`
+#' @param version The `data_params$version` supplied by the user, or `NULL`
+#'
+#' @return The version to use, or `NULL` when `function_name` has no
+#'   `version` argument
+#'
+#' @keywords internal
+#' @noRd
+#'
+etl_qa_resolve_version <- function(function_name, version) {
+  version_defaults <- etl_qa_supported_datasets()$version_defaults
+
+  # functions without a version argument ----
+  if (!function_name %in% names(version_defaults)) {
+    if (!is.null(version)) {
+      message("\u26A0\ufe0f apde.data::", function_name, "() does not have a `version` argument, so ",
+              "data_params$version = '", paste(version, collapse = ', '), "' is being ignored.")
+    }
+    return(NULL)
+  }
+
+  # default ----
+  if (is.null(version)) {
+    version <- unname(version_defaults[function_name])
+    message("data_params$version not provided. Defaulting to '", version, "'.")
+  }
+
+  # validate ----
+  if (!is.character(version) || length(version) != 1 || is.na(version)) {
+    stop("\U0001f47f\ndata_params$version must be a single character string, e.g., '", version_defaults[function_name], "'.")
+  }
+  if (function_name %in% c('birth', 'brfss') && !version %in% c('stage', 'final')) {
+    stop("\U0001f47f\nInvalid value for data_params$version. For '", function_name, "' it must be either 'stage' or 'final'.")
+  }
+
+  return(version)
 }
 
 # process_apde_data() - Function to process apde.data::xxx() ----
@@ -835,14 +884,9 @@ process_apde_data <- function(config) {
     stop("\U0001f47f\nIf provided, `config$data_params$kingco` must be a single logical value (TRUE or FALSE).")
   }
 
-  # Validate config$data_params$version (only birth() & brfss() have stage / final versions)
-  has_version <- config$data_params$function_name %in% etl_qa_apde_data_functions()$versioned
-  if (has_version) {
-    if (is.null(config$data_params$version)) config$data_params$version <- 'stage'
-    if (!(config$data_params$version %in% c('stage', 'final'))) {
-      stop("\U0001f47f\nInvalid value for config$data_params$version. It must be either 'stage' or 'final'.")
-    }
-  }
+  # Validate config$data_params$version (only birth(), brfss(), & hys() have a version argument)
+  config$data_params$version <- etl_qa_resolve_version(config$data_params$function_name, config$data_params$version)
+  has_version <- !is.null(config$data_params$version)
 
   # Identify years with data ----
   # Drop requested years that do not exist (e.g., HYS is only collected every other year).
@@ -859,7 +903,7 @@ process_apde_data <- function(config) {
            rads::format_time(valid_years), ".")
     }
     if (length(dropped_years) > 0) {
-      message("ℹ️ ", config$data_params$function_name, " data are not available for: ",
+      message("\u2139\ufe0f ", config$data_params$function_name, " data are not available for: ",
               rads::format_time(dropped_years), ". Using: ", rads::format_time(years), ".")
     }
   }

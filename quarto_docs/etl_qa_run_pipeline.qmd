@@ -187,7 +187,13 @@ List of data related parameters specific to the data source. Not all parameters 
 
 - \### `data_params$version`
 
-  Character string specifying either `'final'` or `'stage'`.<br>**Required only when `data_source_type = 'apde.data'`**.<br>Default is `version = 'stage'`.
+  Character string specifying the version of the data.<br>**Used only when `data_source_type = 'apde.data'` and `function_name` is `'birth'`, `'brfss'`, or `'hys'`** (the only `apde.data` functions with a `version` argument):
+  
+  - `'birth'` & `'brfss'`: either `'stage'` or `'final'`. Default is `version = 'stage'`.
+  
+  - `'hys'`: the name of a HYS release, e.g., `'dev2025'`. Default is `version = 'best'`. 
+  
+  For all other `function_name` values, `version` is ignored with a message.
 
 - \### `data_params$schema_table`
 
