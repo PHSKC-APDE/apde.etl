@@ -26,8 +26,14 @@
 #' - `cols`: Character vector specifying the column names to analyze,
 #'   e.g., `cols = c('race4', 'birth_weight_grams', 'birthplace_city')`
 #'
-#' - `time_range`: Character vector of length 2 specifying the start
-#'   and end of the time range, e.g., `time_range = c(2015, 2024)`
+#' - `time_range`: Numeric vector of length 2 specifying the start
+#'   and end of the time range, e.g., `time_range = c(2015, 2024)`.
+#'   When `data_source_type = 'apde.data'`, years in the range that have
+#'   no data (e.g., HYS off-years) are dropped with a message. For
+#'   `function_name = 'pums'`, `time_range` must cover either one year
+#'   (e.g., `c(2022, 2022)`) or exactly five consecutive years (e.g.,
+#'   `c(2018, 2022)`), because each maps to one PUMS release, and years
+#'   are not filtered
 #'
 #' - `time_var`: Character string specifying the time interval variable,
 #'   e.g., `time_var = 'chi_year'`
@@ -838,9 +844,29 @@ process_apde_data <- function(config) {
     }
   }
 
-  # Identify CHI variables (if needed) ----
-  possiblecols <- rads::quiet(apde.data::list_data_columns(config$data_params$function_name)[]$var.names)
+  # Identify years with data ----
+  # Drop requested years that do not exist (e.g., HYS is only collected every other year).
+  # Skip PUMS because pums() needs a single year or a 5-year period, e.g., 2018:2022, which includes 2020
+  years <- config$time_range[1]:config$time_range[2]
+  if (config$data_params$function_name != 'pums') {
+    valid_years <- apde.data::list_data_years(dataset = config$data_params$function_name,
+                                              version = if (has_version) config$data_params$version else NULL)
+    dropped_years <- setdiff(years, valid_years)
+    years <- intersect(years, valid_years)
+    if (length(years) == 0) {
+      stop("\U1F6D1\nNo ", config$data_params$function_name, " data are available for data_params$time_range = c(",
+           config$time_range[1], ", ", config$time_range[2], ").\nAvailable years: ",
+           rads::format_time(valid_years), ".")
+    }
+    if (length(dropped_years) > 0) {
+      message("ℹ️ ", config$data_params$function_name, " data are not available for: ",
+              rads::format_time(dropped_years), ". Using: ", rads::format_time(years), ".")
+    }
+  }
 
+  # Identify CHI variables (if needed) ----
+  # Pass the requested years so survey datasets (HYS, BRFSS, PUMS) only list columns that exist in those years
+  possiblecols <- rads::quiet(apde.data::list_data_columns(config$data_params$function_name, year = years)[]$var.names)
 
   if(!config$data_params$time_var %in% possiblecols){
     stop("\U1F6D1\nThe variable specified in data_params$time_var is not available in this dataset.")
@@ -863,7 +889,7 @@ process_apde_data <- function(config) {
   # Use the appropriate apde.data::xxx function ----
   data_func <- utils::getFromNamespace(config$data_params$function_name, 'apde.data') # dynamically get the function without loading all of apde.data
 
-  data_args <- list(year = config$time_range[1]:config$time_range[2],
+  data_args <- list(year = years,
                     cols = unique(c(config$time_var, config$data_params$cols)),
                     kingco = config$data_params$kingco)
   if (has_version) {

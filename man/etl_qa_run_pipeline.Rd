@@ -32,8 +32,14 @@ will assess whether their values align with standards in
 \code{chi_standard_varnames}. Default is \code{FALSE}
 \item \code{cols}: Character vector specifying the column names to analyze,
 e.g., \code{cols = c('race4', 'birth_weight_grams', 'birthplace_city')}
-\item \code{time_range}: Character vector of length 2 specifying the start
-and end of the time range, e.g., \code{time_range = c(2015, 2024)}
+\item \code{time_range}: Numeric vector of length 2 specifying the start
+and end of the time range, e.g., \code{time_range = c(2015, 2024)}.
+When \code{data_source_type = 'apde.data'}, years in the range that have
+no data (e.g., HYS off-years) are dropped with a message. For
+\code{function_name = 'pums'}, \code{time_range} must cover either one year
+(e.g., \code{c(2022, 2022)}) or exactly five consecutive years (e.g.,
+\code{c(2018, 2022)}), because each maps to one PUMS release, and years
+are not filtered
 \item \code{time_var}: Character string specifying the time interval variable,
 e.g., \code{time_var = 'chi_year'}
 \item \code{data}: Name of a data.frame or data.table that you want to assess
