@@ -189,8 +189,14 @@ for details.
 
 - \### `data_params$time_range`
 
-  Character vector of length 2 specifying the start and end of the time
-  range, e.g., `time_range = c(2015, 2024)`.
+  Numeric vector of length 2 specifying the start and end of the time
+  range, e.g., `time_range = c(2015, 2024)`.<br>When
+  `data_source_type = 'apde.data'`, years in the range that have no data
+  (e.g., HYS off-years) are dropped with a message.<br>For
+  `function_name = 'pums'`, `time_range` must cover either one year
+  (e.g., `c(2022, 2022)`) or exactly five consecutive years (e.g.,
+  `c(2018, 2022)`), because each maps to one PUMS release, and years are
+  not filtered.
 
 - \### `data_params$time_var`
 
@@ -218,9 +224,19 @@ for details.
 
 - \### `data_params$version`
 
-  Character string specifying either `'final'` or
-  `'stage'`.<br>**Required only when
-  `data_source_type = 'apde.data'`**.<br>Default is `version = 'stage'`.
+  Character string specifying the version of the data.<br>**Used only
+  when `data_source_type = 'apde.data'` and `function_name` is
+  `'birth'`, `'brfss'`, or `'hys'`** (the only `apde.data` functions
+  with a `version` argument):
+
+  - `'birth'` & `'brfss'`: either `'stage'` or `'final'`. Default is
+    `version = 'stage'`.
+
+  - `'hys'`: the name of a HYS release, e.g., `'dev2025'`. Default is
+    `version = 'best'`.
+
+  For all other `function_name` values, `version` is ignored with a
+  message.
 
 - \### `data_params$schema_table`
 
@@ -311,7 +327,7 @@ qaSQL <- etl_qa_run_pipeline(
 
     Visualizing data ... running etl_qa_export_results()
 
-    Finished! Check your output_directory: C:\Users\DCOLOM~1.KC\AppData\Local\Temp\RtmpMzHTPz
+    Finished! Check your output_directory: C:\Users\DCOLOM~1.KC\AppData\Local\Temp\RtmpyAHUjq
 
 Since we set `check_chi = TRUE`, the function pulled in all available
 CHI related variables and compared them to known standards. In this
@@ -329,15 +345,15 @@ which is `tempdir()`. Let’s see what is saved there:
 list.files(tempdir())
 ```
 
-    [1] "birth.final_analytic_qa_2026_10_22.xlsx"       
-    [2] "birth.final_analytic_qa_missing_2026_10_22.pdf"
-    [3] "birth.final_analytic_qa_values_2026_10_22.pdf" 
+    [1] "birth.final_analytic_qa_2026_10_23.xlsx"       
+    [2] "birth.final_analytic_qa_missing_2026_10_23.pdf"
+    [3] "birth.final_analytic_qa_values_2026_10_23.pdf" 
 
-- **birth.final_analytic_qa_missing_2026_10_22.pdf** contains graphs
+- **birth.final_analytic_qa_missing_2026_10_23.pdf** contains graphs
   like the one showin in Figure 1.
-- **birth.final_analytic_qa_values_2026_10_22.pdf** contains the graphs
+- **birth.final_analytic_qa_values_2026_10_23.pdf** contains the graphs
   like those in Figures 2a, 2b, and 2c.
-- **birth.final_analytic_qa_2026_10_22.xlsx** contains three
+- **birth.final_analytic_qa_2026_10_23.xlsx** contains three
   worksheeets, one for each of the three tables given in the Tables
   section above.
 
@@ -427,4 +443,4 @@ isTRUE(all.equal(qaDF$final, qaAPDEDATA$final))
 Remember to consult the function documentation for more detailed
 information on usage and parameters. Happy coding!
 
-– *Updated by dcolombara, 2026-10-22*
+– *Updated by dcolombara, 2026-10-23*

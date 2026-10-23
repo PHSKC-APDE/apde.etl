@@ -32,8 +32,14 @@ will assess whether their values align with standards in
 \code{chi_standard_varnames}. Default is \code{FALSE}
 \item \code{cols}: Character vector specifying the column names to analyze,
 e.g., \code{cols = c('race4', 'birth_weight_grams', 'birthplace_city')}
-\item \code{time_range}: Character vector of length 2 specifying the start
-and end of the time range, e.g., \code{time_range = c(2015, 2024)}
+\item \code{time_range}: Numeric vector of length 2 specifying the start
+and end of the time range, e.g., \code{time_range = c(2015, 2024)}.
+When \code{data_source_type = 'apde.data'}, years in the range that have
+no data (e.g., HYS off-years) are dropped with a message. For
+\code{function_name = 'pums'}, \code{time_range} must cover either one year
+(e.g., \code{c(2022, 2022)}) or exactly five consecutive years (e.g.,
+\code{c(2018, 2022)}), because each maps to one PUMS release, and years
+are not filtered
 \item \code{time_var}: Character string specifying the time interval variable,
 e.g., \code{time_var = 'chi_year'}
 \item \code{data}: Name of a data.frame or data.table that you want to assess
@@ -47,11 +53,19 @@ listed by \code{apde.data::list_data()}, except \code{'population'}.
 \item \code{kingco}: Logical vector of length 1. Identifies whether you want
 limit the data to King County. \emph{Required only when
 \code{data_source_type = 'apde.data'}}. Default is \code{kingco = TRUE}
-\item \code{version}: Character string specifying either \code{'final'} or
-\code{'stage'}. \emph{Used only when \code{data_source_type = 'apde.data'} and
-\code{function_name} is \code{'birth'} or \code{'brfss'}} (the only \code{apde.data}
-functions with stage and final options). It is ignored for all other
-\code{function_name} values. Default is \code{version = 'stage'}
+\item \code{version}: Character string specifying the version of the data.
+\emph{Used only when \code{data_source_type = 'apde.data'} and \code{function_name}
+is \code{'birth'}, \code{'brfss'}, or \code{'hys'}} (the only \code{apde.data} functions
+with a \code{version} argument):
+\itemize{
+\item \code{'birth'} & \code{'brfss'}: either \code{'stage'} or \code{'final'}. Default is
+\code{version = 'stage'}
+\item \code{'hys'}: the name of a HYS release, e.g., \code{'dev2025'}. Default is
+\code{version = 'best'}.
+}
+
+For all other \code{function_name} values, \code{version} is ignored with a
+message
 \item \code{schema_table}: The name of the schema and table to be accessed
 within the SQL Server \code{connection}. Must be in the form
 \code{myschema.mytable}, with a period as a separator.
