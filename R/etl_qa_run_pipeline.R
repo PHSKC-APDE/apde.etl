@@ -904,7 +904,7 @@ process_apde_data <- function(config) {
     }
     if (length(dropped_years) > 0) {
       message("\u2139\ufe0f ", config$data_params$function_name, " data are not available for: ",
-              rads::format_time(dropped_years), ". Using: ", rads::format_time(years), ".")
+              rads::format_time(dropped_years), ". \nUsing: ", rads::format_time(years), ".")
     }
   }
 
