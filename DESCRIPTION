@@ -1,6 +1,6 @@
 Package: apde.etl
 Title: APDE Tools for ETL (Extract, Transform, & Load) Procesess
-Version: 2.5.0
+Version: 2.5.1
 Authors@R: 
     person("Danny", "Colombara", , "dcolombara@kingcounty.gov", role = c("aut", "cre"))
 Description: Provides tools for ETL and informatics processes.
@@ -33,13 +33,13 @@ Imports:
     yaml
 Remotes:
     github::PHSKC-APDE/apde.connect, 
+    github::PHSKC-APDE/apde.data,
     github::PHSKC-APDE/rads.data, 
-    github::PHSKC-APDE/rads, 
-    github::PHSKC-APDE/apde.data 
+    github::PHSKC-APDE/rads
 Suggests: 
     mockery,
-    pak,
     quarto,
+    remotes,
     testthat
 Depends: 
     R (>= 4.1.0)
