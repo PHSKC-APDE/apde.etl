@@ -159,7 +159,7 @@ List of data related parameters specific to the data source. Not all parameters 
 
 - \### `data_params$check_chi`
 
-  Logical vector of length 1. When `check_chi = TRUE`, function will add any available CHI related variables to `data_params$cols` and, if they are categorical, will assess whether their values align with the standards in `chi_standard_varnames` (a dataset included in `apde.etl`).<br>Default is `check_chi = FALSE`.
+  Logical vector of length 1. When `check_chi = TRUE`, function will add any available CHI related variables to `data_params$cols` and, if they are categorical, will assess whether their values align with the standards in `apde.etl::chi_standard_varnames` (a dataset included in `apde.etl`).<br>Default is `check_chi = FALSE`.
 
 - \### `data_params$cols`
 
