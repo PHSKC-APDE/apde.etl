@@ -179,7 +179,7 @@ for details.
   Logical vector of length 1. When `check_chi = TRUE`, function will add
   any available CHI related variables to `data_params$cols` and, if they
   are categorical, will assess whether their values align with the
-  standards in `chi_standard_varnames` (a dataset included in
+  standards in `apde.etl::chi_standard_varnames` (a dataset included in
   `apde.etl`).<br>Default is `check_chi = FALSE`.
 
 - \### `data_params$cols`
@@ -314,7 +314,7 @@ qaSQL <- etl_qa_run_pipeline(
     Analyzing data ... running etl_qa_initial_results()
 
     😦👿🤬⚠️ 
-    The following varname and group combinations exist in the chi_standard_varnames 
+    The following varname and group combinations exist in the apde.etl::chi_standard_varnames 
     standards but are missing from your dataset. Please ensure your dataset complies with
     the CHI standard.
 
